@@ -1,8 +1,10 @@
 import { useState, useRef } from 'react';
+import { CameraScanner } from './CameraScanner';
 
 export function ScanInput({ onScan, isLoading }) {
   const [value, setValue] = useState('');
   const [open, setOpen] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const inputRef = useRef(null);
 
   const submit = () => {
@@ -23,8 +25,21 @@ export function ScanInput({ onScan, isLoading }) {
     setTimeout(() => inputRef.current?.focus(), 50);
   };
 
+  const handleCameraScan = (isbn) => {
+    setCameraOpen(false);
+    onScan(isbn);
+  };
+
   return (
     <>
+      {/* Kamera-Scanner Fullscreen */}
+      {cameraOpen && (
+        <CameraScanner
+          onScan={handleCameraScan}
+          onClose={() => setCameraOpen(false)}
+        />
+      )}
+
       {/* Mobile FAB */}
       <button
         onClick={openPanel}
@@ -32,22 +47,40 @@ export function ScanInput({ onScan, isLoading }) {
         className="sm:hidden fixed bottom-6 right-6 z-30 w-14 h-14 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-white rounded-full shadow-lg flex items-center justify-center transition-colors"
         aria-label="ISBN scannen oder eingeben"
       >
-        {isLoading ? (
-          <Spinner />
-        ) : (
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 3.5V16m-8 0h.01M4 8V6a2 2 0 012-2h12a2 2 0 012 2v2M4 12v4m0 4h4" />
-          </svg>
-        )}
+        {isLoading ? <Spinner /> : <BarcodeIcon />}
       </button>
 
-      {/* Mobile overlay input */}
+      {/* Mobile overlay */}
       {open && (
-        <div className="sm:hidden fixed inset-0 z-40 bg-black/40 flex items-end" onClick={(e) => e.target === e.currentTarget && setOpen(false)}>
+        <div
+          className="sm:hidden fixed inset-0 z-40 bg-black/40 flex items-end"
+          onClick={(e) => e.target === e.currentTarget && setOpen(false)}
+        >
           <div className="w-full bg-white rounded-t-2xl p-6 shadow-2xl">
             <h3 className="text-base font-semibold text-stone-900 mb-4">
-              ISBN scannen oder eingeben
+              ISBN hinzufügen
             </h3>
+
+            {/* Kamera-Button */}
+            <button
+              onClick={() => { setOpen(false); setCameraOpen(true); }}
+              className="w-full flex items-center gap-3 bg-stone-900 hover:bg-stone-800 text-white rounded-xl px-4 py-3.5 mb-3 transition-colors"
+            >
+              <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span className="text-sm font-medium">Kamera scannen</span>
+            </button>
+
+            {/* Trennlinie */}
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex-1 h-px bg-stone-200" />
+              <span className="text-xs text-stone-400">oder manuell</span>
+              <div className="flex-1 h-px bg-stone-200" />
+            </div>
+
+            {/* Manuelle Eingabe */}
             <div className="flex gap-3">
               <input
                 ref={inputRef}
@@ -72,9 +105,21 @@ export function ScanInput({ onScan, isLoading }) {
         </div>
       )}
 
-      {/* Desktop inline input */}
+      {/* Desktop inline */}
       <div className="hidden sm:flex items-center gap-2">
-        {isLoading && <Spinner className="text-stone-400" />}
+        {isLoading && <Spinner />}
+        {/* Kamera-Button Desktop */}
+        <button
+          onClick={() => setCameraOpen(true)}
+          disabled={isLoading}
+          title="Kamera scannen"
+          className="w-9 h-9 flex items-center justify-center rounded-lg border border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-600 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </button>
         <input
           type="text"
           inputMode="numeric"
@@ -97,9 +142,17 @@ export function ScanInput({ onScan, isLoading }) {
   );
 }
 
+function BarcodeIcon() {
+  return (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 3.5V16m-8 0h.01M4 8V6a2 2 0 012-2h12a2 2 0 012 2v2M4 12v4m0 4h4" />
+    </svg>
+  );
+}
+
 function Spinner() {
   return (
-    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+    <svg className="w-5 h-5 animate-spin text-stone-400" fill="none" viewBox="0 0 24 24">
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
     </svg>
