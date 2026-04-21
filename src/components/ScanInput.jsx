@@ -40,20 +40,20 @@ export function ScanInput({ onScan, isLoading }) {
         />
       )}
 
-      {/* Mobile FAB */}
+      {/* FAB — sichtbar auf allen Bildschirmgrößen */}
       <button
         onClick={openPanel}
         disabled={isLoading}
-        className="sm:hidden fixed bottom-6 right-6 z-30 w-14 h-14 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-white rounded-full shadow-lg flex items-center justify-center transition-colors"
+        className="fixed bottom-6 right-6 z-30 w-14 h-14 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-white rounded-full shadow-lg flex items-center justify-center transition-colors"
         aria-label="ISBN scannen oder eingeben"
       >
         {isLoading ? <Spinner /> : <BarcodeIcon />}
       </button>
 
-      {/* Mobile overlay */}
+      {/* Bottom sheet — funktioniert auf Desktop und Mobile */}
       {open && (
         <div
-          className="sm:hidden fixed inset-0 z-40 bg-black/40 flex items-end"
+          className="fixed inset-0 z-40 bg-black/40 flex items-end"
           onClick={(e) => e.target === e.currentTarget && setOpen(false)}
         >
           <div className="w-full bg-white rounded-t-2xl p-6 shadow-2xl">
