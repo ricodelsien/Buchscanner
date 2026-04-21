@@ -1,35 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-
-// Search Google Books by title / author
-async function searchGoogleBooks(query) {
-  const res = await fetch(
-    `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10`
-  );
-  const data = await res.json();
-  return (data.items ?? []).map((item) => {
-    const info = item.volumeInfo;
-    const thumb = info.imageLinks?.thumbnail
-      ?.replace('http:', 'https:')
-      ?.replace('zoom=1', 'zoom=2')
-      ?.replace('&edge=curl', '');
-    const isbn =
-      info.industryIdentifiers?.find((i) => i.type === 'ISBN_13')?.identifier ??
-      info.industryIdentifiers?.find((i) => i.type === 'ISBN_10')?.identifier ??
-      '';
-    return {
-      isbn,
-      title: info.title ?? '',
-      subtitle: info.subtitle ?? '',
-      authors: info.authors ?? [],
-      year: info.publishedDate?.slice(0, 4) ?? '',
-      pages: info.pageCount ?? null,
-      publisher: info.publisher ?? '',
-      description: info.description ?? '',
-      coverUrl: thumb ?? '',
-      googleCategories: info.categories ?? [],
-    };
-  });
-}
+import { searchBooks } from '../services/bookSearch';
 
 function compressImage(dataUrl, cb) {
   const img = new Image();
@@ -74,7 +44,7 @@ export function BookCreateModal({ onSave, onClose, prefillIsbn = '', existing = 
     setSearching(true);
     setSearchDone(false);
     try {
-      const results = await searchGoogleBooks(q);
+      const results = await searchBooks(q);
       setSearchResults(results);
     } catch {
       setSearchResults([]);
@@ -87,7 +57,7 @@ export function BookCreateModal({ onSave, onClose, prefillIsbn = '', existing = 
   const handleQueryChange = (val) => {
     setQuery(val);
     clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => runSearch(val), 450);
+    debounceRef.current = setTimeout(() => runSearch(val), 300);
   };
 
   useEffect(() => () => clearTimeout(debounceRef.current), []);
@@ -176,9 +146,12 @@ export function BookCreateModal({ onSave, onClose, prefillIsbn = '', existing = 
 
           {/* Search — Titel/Autor suchen */}
           <div>
-            <label className="block text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-1.5">
-              Titel oder Autor suchen
-            </label>
+            <div className="flex items-baseline justify-between mb-1.5">
+              <label className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
+                Titel, Autor oder ISBN
+              </label>
+              <span className="text-[10px] text-stone-400 dark:text-stone-500">Google Books + Open Library</span>
+            </div>
             <div className="relative">
               <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -187,7 +160,7 @@ export function BookCreateModal({ onSave, onClose, prefillIsbn = '', existing = 
                 type="search"
                 value={query}
                 onChange={(e) => handleQueryChange(e.target.value)}
-                placeholder="z.B. Der Prozess Kafka…"
+                placeholder="z.B. Der Prozess, Kafka, 9783…"
                 className={`${inputCls} pl-9 pr-8`}
               />
               {searching && (
@@ -200,16 +173,17 @@ export function BookCreateModal({ onSave, onClose, prefillIsbn = '', existing = 
 
             {/* Results dropdown */}
             {searchResults.length > 0 && (
-              <div className="mt-1 border border-stone-200 dark:border-stone-700 rounded-xl overflow-hidden shadow-lg">
+              <div className="mt-1 border border-stone-200 dark:border-stone-700 rounded-xl overflow-hidden shadow-lg max-h-72 overflow-y-auto">
                 {searchResults.map((r, i) => (
                   <button
                     key={i}
                     onClick={() => applyResult(r)}
                     className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-amber-50 dark:hover:bg-amber-900/20 text-left border-b border-stone-100 dark:border-stone-800 last:border-0 transition-colors"
                   >
-                    <div className="shrink-0 w-8 h-11 rounded overflow-hidden bg-stone-100 dark:bg-stone-800">
+                    {/* Cover thumbnail */}
+                    <div className="shrink-0 w-9 h-12 rounded overflow-hidden bg-stone-100 dark:bg-stone-800">
                       {r.coverUrl ? (
-                        <img src={r.coverUrl} alt="" className="w-full h-full object-cover" />
+                        <img src={r.coverUrl} alt="" className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <svg className="w-4 h-4 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -218,13 +192,17 @@ export function BookCreateModal({ onSave, onClose, prefillIsbn = '', existing = 
                         </div>
                       )}
                     </div>
+                    {/* Metadata */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-stone-900 dark:text-stone-100 truncate">{r.title}</p>
-                      <p className="text-xs text-stone-500 dark:text-stone-400 truncate">
-                        {r.authors.join(', ')}{r.year ? ` · ${r.year}` : ''}
+                      <p className="text-sm font-medium text-stone-900 dark:text-stone-100 leading-tight truncate">{r.title}</p>
+                      <p className="text-xs text-stone-500 dark:text-stone-400 truncate mt-0.5">
+                        {r.authors.join(', ')}
+                        {r.year ? <span className="text-stone-400 dark:text-stone-500"> · {r.year}</span> : ''}
+                        {r.publisher ? <span className="text-stone-400 dark:text-stone-500"> · {r.publisher}</span> : ''}
                       </p>
                     </div>
-                    <svg className="w-4 h-4 text-stone-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {/* Add icon */}
+                    <svg className="w-4 h-4 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
                   </button>
@@ -232,7 +210,9 @@ export function BookCreateModal({ onSave, onClose, prefillIsbn = '', existing = 
               </div>
             )}
             {searchDone && searchResults.length === 0 && query.length >= 2 && (
-              <p className="mt-1 text-xs text-stone-400 dark:text-stone-500 px-1">Keine Ergebnisse — bitte manuell ausfüllen.</p>
+              <p className="mt-1.5 text-xs text-stone-400 dark:text-stone-500 px-1">
+                Nichts gefunden — bitte manuell ausfüllen oder Suche verfeinern.
+              </p>
             )}
           </div>
 
