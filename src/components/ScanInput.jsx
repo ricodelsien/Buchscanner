@@ -144,8 +144,13 @@ export function ScanInput({ onScan, isLoading }) {
 
 function BarcodeIcon() {
   return (
-    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 3.5V16m-8 0h.01M4 8V6a2 2 0 012-2h12a2 2 0 012 2v2M4 12v4m0 4h4" />
+    <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+      <rect x="2"  y="4" width="2"   height="16" rx="0.5"/>
+      <rect x="6"  y="4" width="1"   height="16" rx="0.5"/>
+      <rect x="9"  y="4" width="2.5" height="16" rx="0.5"/>
+      <rect x="13" y="4" width="1"   height="16" rx="0.5"/>
+      <rect x="16" y="4" width="2"   height="16" rx="0.5"/>
+      <rect x="20" y="4" width="1.5" height="16" rx="0.5"/>
     </svg>
   );
 }
