@@ -36,6 +36,7 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createISBN, setCreateISBN] = useState('');
+  const [editBook, setEditBook] = useState(null);
   const scanningRef = useRef(false);
 
   const showToast = useCallback((message, type = 'info', duration = 3500) => {
@@ -77,6 +78,13 @@ export default function App() {
     setShowCreateModal(false);
     setCreateISBN('');
   }, [addBook, showToast]);
+
+  const handleEditSave = useCallback((data) => {
+    if (!editBook) return;
+    updateBook(editBook.id, data);
+    showToast('Buch aktualisiert.', 'success');
+    setEditBook(null);
+  }, [editBook, updateBook, showToast]);
 
   const handleImport = useCallback((importedBooks) => {
     let added = 0;
@@ -128,6 +136,15 @@ export default function App() {
           prefillIsbn={createISBN}
           onSave={handleManualCreate}
           onClose={() => { setShowCreateModal(false); setCreateISBN(''); }}
+        />
+      )}
+
+      {/* Edit existing book */}
+      {editBook && (
+        <BookCreateModal
+          existing={editBook}
+          onSave={handleEditSave}
+          onClose={() => setEditBook(null)}
         />
       )}
 
@@ -208,6 +225,7 @@ export default function App() {
           onUpdateCover={(id, url) => { updateBook(id, { customCover: url }); showToast(url ? 'Cover aktualisiert.' : 'Cover zurückgesetzt.', 'success'); }}
           onUpdate={(id, patch) => updateBook(id, patch)}
           onUpdateShelves={(id, shelfIds) => updateBook(id, { shelfIds })}
+          onEdit={(book) => { setSelected(null); setEditBook(book); }}
         />
       )}
 

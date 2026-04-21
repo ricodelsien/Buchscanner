@@ -1,7 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { chipStyle, resolveHex } from '../services/shelfColors';
 
-export function BookDetail({ book, onClose, onDelete, onUpdateCover, onUpdate, shelves = [], onUpdateShelves }) {
+const STATUSES = [
+  { id: 'want',    label: 'Möchte lesen',  color: '#3b82f6' },
+  { id: 'reading', label: 'Lese gerade',   color: '#f59e0b' },
+  { id: 'read',    label: 'Gelesen',        color: '#22c55e' },
+  { id: 'dropped', label: 'Abgebrochen',   color: '#78716c' },
+];
+
+export function BookDetail({ book, onClose, onDelete, onUpdateCover, onUpdate, onEdit, shelves = [], onUpdateShelves }) {
   const sources = [book.customCover, book.cover, book.coverFallback].filter(Boolean);
   const [srcIndex, setSrcIndex] = useState(0);
   const imgFailed = srcIndex >= sources.length;
@@ -78,6 +85,12 @@ export function BookDetail({ book, onClose, onDelete, onUpdateCover, onUpdate, s
           </button>
 
           <div className="flex items-center gap-1">
+            {/* Edit metadata */}
+            <button onClick={() => onEdit?.(book)} className="w-8 h-8 flex items-center justify-center rounded-full text-stone-400 dark:text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors" title="Bearbeiten">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+            </button>
             <button onClick={share} className="w-8 h-8 flex items-center justify-center rounded-full text-stone-400 dark:text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors" title="Empfehlen">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
@@ -143,6 +156,63 @@ export function BookDetail({ book, onClose, onDelete, onUpdateCover, onUpdate, s
             </div>
             <p className="text-xs text-stone-400 dark:text-stone-500 mt-1 font-mono">ISBN {book.isbn}</p>
           </div>
+        </div>
+
+        {/* Lesestatus */}
+        <div className="px-5 pb-3">
+          <p className="text-xs font-semibold text-stone-400 dark:text-stone-500 uppercase tracking-wider mb-2">Lesestatus</p>
+          <div className="flex gap-1.5 flex-wrap">
+            {STATUSES.map((s) => {
+              const active = book.status === s.id;
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => onUpdate(book.id, { status: active ? null : s.id })}
+                  style={active ? { backgroundColor: s.color, borderColor: s.color, color: '#fff' } : { borderColor: s.color + '55', color: s.color }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all"
+                >
+                  {active && (
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                  {s.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Reading progress — shown when "Lese gerade" */}
+          {book.status === 'reading' && (
+            <div className="mt-3">
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-stone-500 dark:text-stone-400 shrink-0">Seite</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={book.pages || undefined}
+                  value={book.currentPage ?? ''}
+                  onChange={(e) => onUpdate(book.id, { currentPage: parseInt(e.target.value) || 0 })}
+                  placeholder="0"
+                  className="w-20 border border-stone-200 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 text-center"
+                />
+                {book.pages && (
+                  <>
+                    <span className="text-xs text-stone-400">von {book.pages}</span>
+                    <div className="flex-1 h-1.5 bg-stone-100 dark:bg-stone-800 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-amber-400 rounded-full transition-all"
+                        style={{ width: `${Math.min(100, ((book.currentPage ?? 0) / book.pages) * 100)}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-stone-400 shrink-0">
+                      {Math.round(((book.currentPage ?? 0) / book.pages) * 100)}%
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Klappentext */}

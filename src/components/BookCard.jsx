@@ -1,5 +1,8 @@
 import { useState } from 'react';
 
+const STATUS_COLORS = { want: '#3b82f6', reading: '#f59e0b', read: '#22c55e', dropped: '#78716c' };
+const STATUS_LABELS = { want: 'Möchte lesen', reading: 'Lese gerade', read: 'Gelesen', dropped: 'Abgebrochen' };
+
 export function BookCard({ book, onClick, compact = false }) {
   const sources = [book.customCover, book.cover, book.coverFallback].filter(Boolean);
   const [srcIndex, setSrcIndex] = useState(0);
@@ -28,12 +31,29 @@ export function BookCard({ book, onClick, compact = false }) {
         ) : (
           <PlaceholderCover title={book.title} />
         )}
-        {/* Favorite badge */}
+        {/* Status dot top-left */}
+        {book.status && (
+          <div
+            className="absolute top-1.5 left-1.5 w-2.5 h-2.5 rounded-full shadow-sm ring-1 ring-white/50"
+            style={{ backgroundColor: STATUS_COLORS[book.status] ?? '#78716c' }}
+            title={STATUS_LABELS[book.status]}
+          />
+        )}
+        {/* Favorite badge top-right */}
         {book.favorite && (
           <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-white/90 dark:bg-stone-900/80 flex items-center justify-center shadow-sm">
             <svg className="w-3 h-3 text-rose-500" fill="currentColor" viewBox="0 0 24 24">
               <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
+          </div>
+        )}
+        {/* Reading progress bar along the bottom of the cover */}
+        {book.status === 'reading' && book.pages && book.currentPage > 0 && (
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/20">
+            <div
+              className="h-full bg-amber-400"
+              style={{ width: `${Math.min(100, (book.currentPage / book.pages) * 100)}%` }}
+            />
           </div>
         )}
       </div>

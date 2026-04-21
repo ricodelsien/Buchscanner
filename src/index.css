@@ -5,8 +5,9 @@
 @layer base {
   html {
     height: 100%;
-    /* Prevent rubber-band overscroll at page level */
     overscroll-behavior: none;
+    /* Disable double-tap zoom while keeping scroll/pan */
+    touch-action: manipulation;
   }
   body {
     height: 100%;
@@ -17,6 +18,16 @@
     height: 100%;
     display: flex;
     flex-direction: column;
+  }
+  /* iOS Safari zooms in on inputs smaller than 16px — force 16px to prevent that */
+  input[type="text"],
+  input[type="number"],
+  input[type="url"],
+  input[type="email"],
+  input[type="search"],
+  textarea,
+  select {
+    font-size: 1rem;
   }
 }
 
