@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { SHELF_COLORS, getColor, DEFAULT_COLOR } from '../services/shelfColors';
 
-export function FilterBar({ shelves, books, activeShelfId, onShelfChange, viewMode, onViewModeChange, onAddShelf, onUpdateShelf, onRemoveShelf }) {
+export function FilterBar({ shelves, books, activeShelfId, onShelfChange, viewMode, onViewModeChange, onAddShelf, onUpdateShelf, onRemoveShelf, search, onSearch, favoritesOnly, onToggleFavorites }) {
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState(DEFAULT_COLOR);
@@ -132,6 +132,21 @@ export function FilterBar({ shelves, books, activeShelfId, onShelfChange, viewMo
           </button>
         )}
 
+        {/* Favoriten-Filter */}
+        <button
+          onClick={onToggleFavorites}
+          className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+            favoritesOnly
+              ? 'bg-rose-500 text-white border-rose-500'
+              : 'text-stone-500 dark:text-stone-400 border-stone-200 dark:border-stone-700 hover:border-stone-400'
+          }`}
+          title="Nur Favoriten"
+        >
+          <svg className="w-3 h-3" fill={favoritesOnly ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+          </svg>
+        </button>
+
         {/* Spacer + View toggle (rechts) */}
         <div className="flex-1" />
         <div className="shrink-0 flex items-center gap-0.5 bg-stone-100 rounded-lg p-0.5">
@@ -152,6 +167,31 @@ export function FilterBar({ shelves, books, activeShelfId, onShelfChange, viewMo
           ))}
         </div>
       </div>
+
+      {/* Search */}
+      {(search !== undefined) && (
+        <div className="px-4 pb-2.5">
+          <div className="relative">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => onSearch(e.target.value)}
+              placeholder="Titel oder Autor suchen…"
+              className="w-full pl-9 pr-3 py-2 text-sm border border-stone-200 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 bg-stone-50 dark:placeholder-stone-500"
+            />
+            {search && (
+              <button onClick={() => onSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Inline Edit Modal */}
       {editingId && (

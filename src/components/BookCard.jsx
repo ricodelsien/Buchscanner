@@ -22,15 +22,29 @@ export function BookCard({ book, onClick, compact = false }) {
           <PlaceholderCover title={book.title} />
         )}
       </div>
-      <div className={`${compact ? 'p-2' : 'p-3'} flex flex-col gap-0.5 flex-1`}>
-        <p className={`${compact ? 'text-xs' : 'text-sm'} font-semibold text-stone-900 line-clamp-2 leading-tight`}>
+      <div className={`${compact ? 'p-2' : 'p-3'} flex flex-col gap-0.5 flex-1 relative`}>
+        {book.favorite && (
+          <svg className="absolute top-2 right-2 w-3 h-3 text-rose-400" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+          </svg>
+        )}
+        <p className={`${compact ? 'text-xs' : 'text-sm'} font-semibold text-stone-900 dark:text-stone-100 line-clamp-2 leading-tight`}>
           {book.title}
         </p>
         {!compact && (
-          <p className="text-xs text-stone-500 truncate">{book.authors?.join(', ')}</p>
+          <p className="text-xs text-stone-500 dark:text-stone-400 truncate">{book.authors?.join(', ')}</p>
         )}
-        {!compact && book.year && (
-          <p className="text-xs text-stone-400 mt-auto pt-1">{book.year}</p>
+        {!compact && book.rating > 0 && (
+          <div className="flex gap-0.5 mt-auto pt-1">
+            {[1,2,3,4,5].map((s) => (
+              <svg key={s} className={`w-3 h-3 ${s <= book.rating ? 'text-amber-400' : 'text-stone-200 dark:text-stone-700'}`} fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+              </svg>
+            ))}
+          </div>
+        )}
+        {!compact && !book.rating && book.year && (
+          <p className="text-xs text-stone-400 dark:text-stone-500 mt-auto pt-1">{book.year}</p>
         )}
       </div>
     </button>
