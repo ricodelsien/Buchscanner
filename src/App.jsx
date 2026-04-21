@@ -14,6 +14,7 @@ import { FilterBar } from './components/FilterBar';
 import { ProfileSetup } from './components/ProfileSetup';
 import { StorageNotice } from './components/StorageNotice';
 import { SettingsModal } from './components/SettingsModal';
+import { BookCreateModal } from './components/BookCreateModal';
 
 let toastId = 0;
 
@@ -33,6 +34,8 @@ export default function App() {
   const [showProfileSetup, setShowProfileSetup] = useState(!hasProfile);
   const [editProfile, setEditProfile] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createISBN, setCreateISBN] = useState('');
   const scanningRef = useRef(false);
 
   const showToast = useCallback((message, type = 'info', duration = 3500) => {
@@ -49,7 +52,12 @@ export default function App() {
       const existing = findByISBN(isbn);
       if (existing) { showToast(`"${existing.title}" ist bereits in deiner Mediathek.`, 'warning'); return; }
       const data = await fetchBookByISBN(isbn);
-      if (!data) { showToast(`Kein Buch zur ISBN ${isbn} gefunden.`, 'error'); return; }
+      if (!data) {
+        showToast(`ISBN ${isbn} nicht gefunden — bitte manuell anlegen.`, 'warning');
+        setCreateISBN(isbn);
+        setShowCreateModal(true);
+        return;
+      }
       let shelfIds = [];
       const genre = detectGenre(data.googleCategories ?? []);
       if (genre) { const shelf = findOrCreate(genre.label, genre.color); shelfIds = [shelf.id]; }
@@ -62,6 +70,13 @@ export default function App() {
   }, [findByISBN, addBook, showToast, findOrCreate]);
 
   useScanner(handleScan);
+
+  const handleManualCreate = useCallback((data) => {
+    addBook({ ...data, id: undefined });
+    showToast(`"${data.title}" hinzugefügt.`, 'success');
+    setShowCreateModal(false);
+    setCreateISBN('');
+  }, [addBook, showToast]);
 
   const handleImport = useCallback((importedBooks) => {
     let added = 0;
@@ -97,13 +112,22 @@ export default function App() {
     : 'Mediathek';
 
   return (
-    <div className="min-h-screen flex flex-col bg-stone-50 dark:bg-stone-950">
+    <div className="h-full flex flex-col bg-stone-50 dark:bg-stone-950 overflow-hidden">
 
       {/* Profile setup (first launch) */}
       {(showProfileSetup || editProfile) && (
         <ProfileSetup
           existing={editProfile ? profile : null}
           onSave={(p) => { saveProfile(p); setShowProfileSetup(false); setEditProfile(false); showToast(`Willkommen, ${p.name}!`, 'success'); }}
+        />
+      )}
+
+      {/* Manual book creation */}
+      {showCreateModal && (
+        <BookCreateModal
+          prefillIsbn={createISBN}
+          onSave={handleManualCreate}
+          onClose={() => { setShowCreateModal(false); setCreateISBN(''); }}
         />
       )}
 
@@ -136,6 +160,16 @@ export default function App() {
 
           <div className="flex items-center gap-2">
             <ScanInput onScan={handleScan} isLoading={isLoading} />
+            {/* Manual book entry */}
+            <button
+              onClick={() => { setCreateISBN(''); setShowCreateModal(true); }}
+              className="w-9 h-9 flex items-center justify-center rounded-lg text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
+              title="Buch manuell anlegen"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
             <button onClick={() => setShowSettings(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors" title="Einstellungen">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -159,8 +193,8 @@ export default function App() {
       {/* Mobile localStorage notice */}
       <StorageNotice />
 
-      {/* Books */}
-      <main className="flex-1 max-w-7xl mx-auto w-full flex flex-col">
+      {/* Books — scrolls independently, everything else stays fixed */}
+      <main className="flex-1 overflow-y-auto overscroll-contain max-w-7xl mx-auto w-full flex flex-col">
         <BookGrid books={filteredBooks} shelves={shelves} onSelect={setSelected} viewMode={viewMode} />
       </main>
 

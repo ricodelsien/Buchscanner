@@ -38,8 +38,8 @@ export function BookCard({ book, onClick, compact = false }) {
         )}
       </div>
 
-      {/* Shelf edge — gives the "sitting on a shelf" look */}
-      <div className="h-1 bg-gradient-to-b from-stone-200 to-stone-300 dark:from-stone-600 dark:to-stone-700 w-full" />
+      {/* Shelf edge — warm amber strip where book meets shelf */}
+      <div className="h-2 w-full bg-gradient-to-b from-amber-200 to-amber-300/70 dark:from-amber-900/60 dark:to-amber-800/30 border-t border-amber-300/80 dark:border-amber-800/60" />
 
       {/* Metadata */}
       <div className={`${compact ? 'p-2' : 'p-3'} flex flex-col gap-0.5 flex-1`}>

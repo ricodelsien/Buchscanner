@@ -58,6 +58,45 @@ export async function fetchBookByISBN(isbn) {
     // both APIs failed
   }
 
+  // Deutsche Nationalbibliothek — good coverage of German-language books
+  try {
+    const res = await fetch(
+      `https://services.dnb.de/sru/dnb?version=1.1&operation=searchRetrieve&query=isbn%3D${clean}&recordSchema=oai_dc&maximumRecords=1`
+    );
+    const text = await res.text();
+
+    const extract = (tag) =>
+      text.match(new RegExp(`<dc:${tag}[^>]*>([^<]+)<\\/dc:${tag}>`))?.[1]?.trim() || '';
+    const extractAll = (tag) =>
+      [...text.matchAll(new RegExp(`<dc:${tag}[^>]*>([^<]+)<\\/dc:${tag}>`, 'g'))]
+        .map((m) => m[1].trim())
+        .filter(Boolean);
+
+    const title = extract('title');
+    if (title) {
+      const formatRaw = extract('format');
+      const pages = parseInt(formatRaw.match(/(\d+)\s*S/)?.[1]) || null;
+      const dateRaw = extract('date');
+      const year = dateRaw.match(/\d{4}/)?.[0] || '';
+      return {
+        isbn: clean,
+        title,
+        subtitle: '',
+        authors: extractAll('creator').length ? extractAll('creator') : ['Unbekannter Autor'],
+        year,
+        pages,
+        description: extract('description'),
+        publisher: extract('publisher'),
+        cover: openLibraryCover(clean),
+        coverFallback: null,
+        language: 'de',
+        googleCategories: [],
+      };
+    }
+  } catch {
+    // DNB CORS or network error — fall through
+  }
+
   return null;
 }
 
