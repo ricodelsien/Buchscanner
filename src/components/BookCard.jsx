@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export function BookCard({ book, onClick }) {
+export function BookCard({ book, onClick, compact = false }) {
   const sources = [book.customCover, book.cover, book.coverFallback].filter(Boolean);
   const [srcIndex, setSrcIndex] = useState(0);
   const failed = srcIndex >= sources.length;
@@ -22,14 +22,14 @@ export function BookCard({ book, onClick }) {
           <PlaceholderCover title={book.title} />
         )}
       </div>
-      <div className="p-3 flex flex-col gap-1 flex-1">
-        <p className="text-sm font-semibold text-stone-900 line-clamp-2 leading-tight">
+      <div className={`${compact ? 'p-2' : 'p-3'} flex flex-col gap-0.5 flex-1`}>
+        <p className={`${compact ? 'text-xs' : 'text-sm'} font-semibold text-stone-900 line-clamp-2 leading-tight`}>
           {book.title}
         </p>
-        <p className="text-xs text-stone-500 truncate">
-          {book.authors?.join(', ')}
-        </p>
-        {book.year && (
+        {!compact && (
+          <p className="text-xs text-stone-500 truncate">{book.authors?.join(', ')}</p>
+        )}
+        {!compact && book.year && (
           <p className="text-xs text-stone-400 mt-auto pt-1">{book.year}</p>
         )}
       </div>

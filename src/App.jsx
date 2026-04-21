@@ -1,19 +1,26 @@
 import { useState, useCallback, useRef } from 'react';
 import { useBooks } from './hooks/useBooks';
+import { useShelves } from './hooks/useShelves';
 import { useScanner } from './hooks/useScanner';
 import { fetchBookByISBN } from './services/bookApi';
+import { detectGenre } from './services/genreMap';
 import { BookGrid } from './components/BookGrid';
 import { BookDetail } from './components/BookDetail';
 import { ToastContainer } from './components/Toast';
 import { ScanInput } from './components/ScanInput';
+import { FilterBar } from './components/FilterBar';
 
 let toastId = 0;
 
 export default function App() {
   const { books, addBook, removeBook, updateBook, findByISBN } = useBooks();
+  const { shelves, addShelf, updateShelf, removeShelf, findOrCreate } = useShelves();
+
   const [selected, setSelected] = useState(null);
   const [toasts, setToasts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeShelfId, setActiveShelfId] = useState(null);
+  const [viewMode, setViewMode] = useState('grid');
   const scanningRef = useRef(false);
 
   const showToast = useCallback((message, type = 'info', duration = 3500) => {
@@ -35,21 +42,35 @@ export default function App() {
       }
 
       const data = await fetchBookByISBN(isbn);
-
       if (!data) {
         showToast(`Kein Buch zur ISBN ${isbn} gefunden.`, 'error');
         return;
       }
 
-      addBook(data);
+      // Auto-Kategorisierung
+      let shelfIds = [];
+      const genre = detectGenre(data.googleCategories ?? []);
+      if (genre) {
+        const shelf = findOrCreate(genre.label, genre.color);
+        shelfIds = [shelf.id];
+      }
+
+      addBook({ ...data, shelfIds });
       showToast(`"${data.title}" hinzugefügt.`, 'success');
     } finally {
       setIsLoading(false);
       scanningRef.current = false;
     }
-  }, [findByISBN, addBook, showToast]);
+  }, [findByISBN, addBook, showToast, findOrCreate]);
 
   useScanner(handleScan);
+
+  const filteredBooks = activeShelfId
+    ? books.filter((b) => b.shelfIds?.includes(activeShelfId))
+    : books;
+
+  // Immer aktuelles Book-Objekt aus State (z.B. nach Cover-Upload oder Regal-Änderung)
+  const selectedBook = selected ? books.find((b) => b.id === selected.id) ?? selected : null;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -67,20 +88,38 @@ export default function App() {
               </p>
             </div>
           </div>
-
           <ScanInput onScan={handleScan} isLoading={isLoading} />
         </div>
       </header>
 
+      {/* Filter + View Toggle */}
+      <FilterBar
+        shelves={shelves}
+        books={books}
+        activeShelfId={activeShelfId}
+        onShelfChange={setActiveShelfId}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        onAddShelf={addShelf}
+        onUpdateShelf={updateShelf}
+        onRemoveShelf={removeShelf}
+      />
+
       {/* Main */}
       <main className="flex-1 max-w-7xl mx-auto w-full flex flex-col">
-        <BookGrid books={books} onSelect={setSelected} />
+        <BookGrid
+          books={filteredBooks}
+          shelves={shelves}
+          onSelect={setSelected}
+          viewMode={viewMode}
+        />
       </main>
 
       {/* Detail modal */}
-      {selected && (
+      {selectedBook && (
         <BookDetail
-          book={books.find((b) => b.id === selected.id) ?? selected}
+          book={selectedBook}
+          shelves={shelves}
           onClose={() => setSelected(null)}
           onDelete={(id) => {
             removeBook(id);
@@ -91,10 +130,10 @@ export default function App() {
             updateBook(id, { customCover: dataUrl });
             showToast(dataUrl ? 'Cover aktualisiert.' : 'Cover zurückgesetzt.', 'success');
           }}
+          onUpdateShelves={(id, shelfIds) => updateBook(id, { shelfIds })}
         />
       )}
 
-      {/* Toasts */}
       <ToastContainer toasts={toasts} />
     </div>
   );

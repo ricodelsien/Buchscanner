@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
+import { getColor } from '../services/shelfColors';
 
-export function BookDetail({ book, onClose, onDelete, onUpdateCover }) {
+export function BookDetail({ book, onClose, onDelete, onUpdateCover, shelves = [], onUpdateShelves }) {
   const sources = [book.customCover, book.cover, book.coverFallback].filter(Boolean);
   const [srcIndex, setSrcIndex] = useState(0);
   const imgFailed = srcIndex >= sources.length;
@@ -159,6 +160,44 @@ export function BookDetail({ book, onClose, onDelete, onUpdateCover }) {
             <p className="text-sm text-stone-600 leading-relaxed line-clamp-3">
               {book.description.replace(/<[^>]+>/g, '')}
             </p>
+          </div>
+        )}
+
+        {/* Regale */}
+        {shelves.length > 0 && (
+          <div className="px-6 pb-4">
+            <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">
+              Regale
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {shelves.map((shelf) => {
+                const checked = book.shelfIds?.includes(shelf.id) ?? false;
+                const c = getColor(shelf.color);
+                const toggle = () => {
+                  const current = book.shelfIds ?? [];
+                  const next = checked
+                    ? current.filter((id) => id !== shelf.id)
+                    : [...current, shelf.id];
+                  onUpdateShelves(book.id, next);
+                };
+                return (
+                  <button
+                    key={shelf.id}
+                    onClick={toggle}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                      checked ? c.active : `${c.chip} opacity-50 hover:opacity-100`
+                    }`}
+                  >
+                    {checked && (
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                    {shelf.name}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 

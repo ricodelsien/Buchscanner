@@ -26,6 +26,7 @@ export async function fetchBookByISBN(isbn) {
         cover: openLibraryCover(clean),
         coverFallback: googleCover || null,
         language: info.language || '',
+        googleCategories: info.categories || [],
       };
     }
   } catch {
