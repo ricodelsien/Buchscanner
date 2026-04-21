@@ -1,0 +1,16 @@
+{
+  "name": "Mediathek",
+  "short_name": "Mediathek",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fafaf9",
+  "theme_color": "#f59e0b",
+  "description": "Persönliche Buchverwaltung mit Barcode-Scanner",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ]
+}
