@@ -7,74 +7,113 @@ const ALL_GENRES = [
   'Horror', 'Comics & Manga', 'Kochen', 'Wirtschaft', 'Kunst & Design',
 ];
 
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h >= 3 && h < 12) return 'Guten Morgen';
+  if (h >= 12 && h < 18) return 'Guten Tag';
+  return 'Guten Abend';
+}
+
 export function ProfileSetup({ onSave, existing }) {
+  const [step, setStep] = useState(0);
   const [name, setName] = useState(existing?.name ?? '');
   const [genres, setGenres] = useState(existing?.favoriteGenres ?? []);
 
   const toggleGenre = (g) =>
     setGenres((prev) => prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]);
 
-  const save = () => {
-    if (!name.trim()) return;
-    onSave({ name: name.trim(), favoriteGenres: genres });
-  };
+  const finish = () => onSave({ name: name.trim(), favoriteGenres: genres });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="bg-white dark:bg-stone-900 rounded-2xl shadow-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+      <div className="bg-white dark:bg-stone-900 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+
+        {/* Step indicator */}
+        <div className="flex gap-1 p-4 pb-0">
+          {[0, 1].map((i) => (
+            <div key={i} className={`flex-1 h-1 rounded-full transition-colors ${step >= i ? 'bg-amber-500' : 'bg-stone-200 dark:bg-stone-700'}`} />
+          ))}
+        </div>
+
         <div className="p-6">
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/40 rounded-full flex items-center justify-center mx-auto mb-3">
-              <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </div>
-            <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100">
-              {existing ? 'Profil bearbeiten' : 'Willkommen!'}
-            </h2>
-            {!existing && (
-              <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
-                Wie sollen wir dich nennen?
-              </p>
-            )}
-          </div>
+          {/* Step 0: Name */}
+          {step === 0 && (
+            <div>
+              <div className="text-center mb-6">
+                <p className="text-2xl font-bold text-stone-900 dark:text-stone-100 mb-1">
+                  {getGreeting()}!
+                </p>
+                <p className="text-stone-500 dark:text-stone-400 text-sm">
+                  Willkommen in deiner Mediathek.
+                </p>
+              </div>
 
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && save()}
-            placeholder="Dein Name…"
-            autoFocus
-            className="w-full border border-stone-300 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-100 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 mb-5"
-          />
-
-          <p className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-3">
-            Lieblingsgenres (optional)
-          </p>
-          <div className="flex flex-wrap gap-2 mb-6">
-            {ALL_GENRES.map((g) => (
+              <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">
+                Wie heißt du?
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && name.trim() && setStep(1)}
+                placeholder="Dein Name…"
+                autoFocus
+                className="w-full border border-stone-200 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 mb-4"
+              />
               <button
-                key={g}
-                onClick={() => toggleGenre(g)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                  genres.includes(g)
-                    ? 'bg-amber-500 text-white border-amber-500'
-                    : 'bg-stone-50 dark:bg-stone-800 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-600 hover:border-stone-400'
-                }`}
+                onClick={() => setStep(1)}
+                disabled={!name.trim()}
+                className="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-amber-200 dark:disabled:bg-amber-900/40 text-white rounded-xl py-3 text-sm font-semibold transition-colors"
               >
-                {g}
+                Weiter
               </button>
-            ))}
-          </div>
+            </div>
+          )}
 
-          <button
-            onClick={save}
-            disabled={!name.trim()}
-            className="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-amber-200 text-white rounded-xl py-3 text-sm font-semibold transition-colors"
-          >
-            {existing ? 'Speichern' : 'Loslegen'}
-          </button>
+          {/* Step 1: Genres */}
+          {step === 1 && (
+            <div>
+              <div className="mb-4">
+                <p className="text-lg font-bold text-stone-900 dark:text-stone-100 mb-1">
+                  Hallo, {name}!
+                </p>
+                <p className="text-sm text-stone-500 dark:text-stone-400">
+                  Wofür interessierst du dich? <span className="text-stone-400">(optional)</span>
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-2 mb-5 max-h-52 overflow-y-auto">
+                {ALL_GENRES.map((g) => (
+                  <button
+                    key={g}
+                    onClick={() => toggleGenre(g)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                      genres.includes(g)
+                        ? 'bg-amber-500 text-white border-amber-500'
+                        : 'bg-stone-50 dark:bg-stone-800 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-600 hover:border-amber-400'
+                    }`}
+                  >
+                    {g}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={finish}
+                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-white rounded-xl py-3 text-sm font-semibold transition-colors"
+                >
+                  Loslegen
+                </button>
+                <button
+                  onClick={finish}
+                  className="px-4 py-3 text-sm text-stone-400 dark:text-stone-500 hover:text-stone-600 transition-colors"
+                >
+                  Überspringen
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

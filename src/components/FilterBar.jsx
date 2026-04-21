@@ -1,45 +1,34 @@
-import { useState, useRef } from 'react';
-import { SHELF_COLORS, getColor, DEFAULT_COLOR } from '../services/shelfColors';
+import { useState } from 'react';
+import { chipStyle, resolveHex, DEFAULT_COLOR } from '../services/shelfColors';
+import { ShelfCreateModal } from './ShelfCreateModal';
 
 export function FilterBar({ shelves, books, activeShelfId, onShelfChange, viewMode, onViewModeChange, onAddShelf, onUpdateShelf, onRemoveShelf, search, onSearch, favoritesOnly, onToggleFavorites }) {
-  const [creating, setCreating] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [newColor, setNewColor] = useState(DEFAULT_COLOR);
-  const [editingId, setEditingId] = useState(null);
-  const [editName, setEditName] = useState('');
-  const [editColor, setEditColor] = useState(DEFAULT_COLOR);
-  const inputRef = useRef(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingShelf, setEditingShelf] = useState(null); // full shelf object
 
   const bookCount = (shelfId) =>
     shelfId ? books.filter((b) => b.shelfIds?.includes(shelfId)).length : books.length;
 
-  const startCreate = () => {
-    setCreating(true);
-    setNewName('');
-    setNewColor(DEFAULT_COLOR);
-    setTimeout(() => inputRef.current?.focus(), 50);
+  const handleCreate = (name, color) => {
+    onAddShelf(name, color);
+    setShowCreateModal(false);
   };
 
-  const confirmCreate = () => {
-    const name = newName.trim();
-    if (name) onAddShelf(name, newColor);
-    setCreating(false);
-    setNewName('');
+  const handleEdit = (name, color) => {
+    if (!editingShelf) return;
+    onUpdateShelf(editingShelf.id, { name, color });
+    setEditingShelf(null);
   };
 
-  const startEdit = (shelf) => {
-    setEditingId(shelf.id);
-    setEditName(shelf.name);
-    setEditColor(shelf.color);
-  };
-
-  const confirmEdit = () => {
-    if (editName.trim()) onUpdateShelf(editingId, { name: editName.trim(), color: editColor });
-    setEditingId(null);
+  const handleDelete = () => {
+    if (!editingShelf) return;
+    onRemoveShelf(editingShelf.id);
+    if (activeShelfId === editingShelf.id) onShelfChange(null);
+    setEditingShelf(null);
   };
 
   return (
-    <div className="bg-white border-b border-stone-200">
+    <div className="bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800">
       {/* Chips row */}
       <div className="flex items-center gap-2 px-4 py-2.5 overflow-x-auto scrollbar-none">
         {/* Alle */}
@@ -47,38 +36,35 @@ export function FilterBar({ shelves, books, activeShelfId, onShelfChange, viewMo
           onClick={() => onShelfChange(null)}
           className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
             activeShelfId === null
-              ? 'bg-stone-900 text-white border-stone-900'
-              : 'bg-white text-stone-600 border-stone-200 hover:border-stone-400'
+              ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100'
+              : 'bg-white dark:bg-stone-800 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:border-stone-400 dark:hover:border-stone-500'
           }`}
         >
           Alle
-          <span className={`text-xs ${activeShelfId === null ? 'text-white/70' : 'text-stone-400'}`}>
+          <span className={`text-xs ${activeShelfId === null ? 'opacity-70' : 'text-stone-400 dark:text-stone-500'}`}>
             {books.length}
           </span>
         </button>
 
         {/* Shelf chips */}
         {shelves.map((shelf) => {
-          const c = getColor(shelf.color);
+          const hex = resolveHex(shelf.color);
           const isActive = activeShelfId === shelf.id;
+          const style = chipStyle(hex, isActive);
           return (
             <div key={shelf.id} className="shrink-0 flex items-center gap-0.5">
               <button
                 onClick={() => onShelfChange(isActive ? null : shelf.id)}
-                className={`flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-l-full text-xs font-medium border transition-colors ${
-                  isActive ? c.active : `${c.chip} hover:opacity-80`
-                }`}
+                style={style}
+                className="flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-l-full text-xs font-medium border transition-all hover:brightness-105"
               >
                 {shelf.name}
-                <span className={`text-xs ${isActive ? 'opacity-70' : 'opacity-60'}`}>
-                  {bookCount(shelf.id)}
-                </span>
+                <span className="text-xs opacity-60">{bookCount(shelf.id)}</span>
               </button>
               <button
-                onClick={() => startEdit(shelf)}
-                className={`px-1.5 py-1.5 rounded-r-full text-xs border-y border-r transition-colors ${
-                  isActive ? `${c.active} border-transparent` : `${c.chip} hover:opacity-80`
-                }`}
+                onClick={() => setEditingShelf(shelf)}
+                style={style}
+                className="px-1.5 py-1.5 rounded-r-full text-xs border-y border-r transition-all hover:brightness-105"
                 title="Regal bearbeiten"
               >
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -89,56 +75,24 @@ export function FilterBar({ shelves, books, activeShelfId, onShelfChange, viewMo
           );
         })}
 
-        {/* Neues Regal */}
-        {creating ? (
-          <div className="shrink-0 flex items-center gap-1.5 border border-stone-300 rounded-full px-2 py-1 bg-white">
-            <div className="flex gap-0.5">
-              {SHELF_COLORS.map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => setNewColor(c.id)}
-                  className={`w-3.5 h-3.5 rounded-full ${c.dot} ${newColor === c.id ? 'ring-2 ring-offset-1 ring-stone-400' : ''}`}
-                />
-              ))}
-            </div>
-            <input
-              ref={inputRef}
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') confirmCreate(); if (e.key === 'Escape') setCreating(false); }}
-              placeholder="Name…"
-              className="w-24 text-xs outline-none"
-            />
-            <button onClick={confirmCreate} className="text-stone-500 hover:text-stone-900">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-              </svg>
-            </button>
-            <button onClick={() => setCreating(false)} className="text-stone-400 hover:text-stone-600">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={startCreate}
-            className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full border border-dashed border-stone-300 text-stone-400 hover:border-stone-500 hover:text-stone-600 transition-colors"
-            title="Regal hinzufügen"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-          </button>
-        )}
+        {/* Add shelf button */}
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full border border-dashed border-stone-300 dark:border-stone-600 text-stone-400 dark:text-stone-500 hover:border-amber-400 dark:hover:border-amber-500 hover:text-amber-500 transition-colors"
+          title="Regal hinzufügen"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+        </button>
 
-        {/* Favoriten-Filter */}
+        {/* Favorites filter */}
         <button
           onClick={onToggleFavorites}
           className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
             favoritesOnly
               ? 'bg-rose-500 text-white border-rose-500'
-              : 'text-stone-500 dark:text-stone-400 border-stone-200 dark:border-stone-700 hover:border-stone-400'
+              : 'text-stone-500 dark:text-stone-400 border-stone-200 dark:border-stone-700 hover:border-stone-400 dark:hover:border-stone-600'
           }`}
           title="Nur Favoriten"
         >
@@ -147,9 +101,9 @@ export function FilterBar({ shelves, books, activeShelfId, onShelfChange, viewMo
           </svg>
         </button>
 
-        {/* Spacer + View toggle (rechts) */}
+        {/* Spacer + View toggle */}
         <div className="flex-1" />
-        <div className="shrink-0 flex items-center gap-0.5 bg-stone-100 rounded-lg p-0.5">
+        <div className="shrink-0 flex items-center gap-0.5 bg-stone-100 dark:bg-stone-800 rounded-lg p-0.5">
           {[
             { mode: 'grid', icon: <GridIcon /> },
             { mode: 'compact', icon: <CompactIcon /> },
@@ -159,7 +113,9 @@ export function FilterBar({ shelves, books, activeShelfId, onShelfChange, viewMo
               key={mode}
               onClick={() => onViewModeChange(mode)}
               className={`w-7 h-7 flex items-center justify-center rounded-md transition-colors ${
-                viewMode === mode ? 'bg-white shadow-sm text-stone-900' : 'text-stone-400 hover:text-stone-600'
+                viewMode === mode
+                  ? 'bg-white dark:bg-stone-700 shadow-sm text-stone-900 dark:text-stone-100'
+                  : 'text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300'
               }`}
             >
               {icon}
@@ -169,7 +125,7 @@ export function FilterBar({ shelves, books, activeShelfId, onShelfChange, viewMo
       </div>
 
       {/* Search */}
-      {(search !== undefined) && (
+      {search !== undefined && (
         <div className="px-4 pb-2.5">
           <div className="relative">
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -193,57 +149,23 @@ export function FilterBar({ shelves, books, activeShelfId, onShelfChange, viewMo
         </div>
       )}
 
-      {/* Inline Edit Modal */}
-      {editingId && (
-        <EditShelfModal
-          name={editName}
-          color={editColor}
-          onNameChange={setEditName}
-          onColorChange={setEditColor}
-          onSave={confirmEdit}
-          onDelete={() => {
-            onRemoveShelf(editingId);
-            if (activeShelfId === editingId) onShelfChange(null);
-            setEditingId(null);
-          }}
-          onClose={() => setEditingId(null)}
+      {/* Create shelf modal */}
+      {showCreateModal && (
+        <ShelfCreateModal
+          onSave={handleCreate}
+          onClose={() => setShowCreateModal(false)}
         />
       )}
-    </div>
-  );
-}
 
-function EditShelfModal({ name, color, onNameChange, onColorChange, onSave, onDelete, onClose }) {
-  return (
-    <div className="fixed inset-0 z-40 flex items-end sm:items-center justify-center" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative z-10 bg-white w-full sm:max-w-sm sm:rounded-2xl rounded-t-2xl p-5 shadow-xl">
-        <h3 className="text-sm font-semibold text-stone-900 mb-4">Regal bearbeiten</h3>
-        <div className="flex gap-2 mb-4">
-          {SHELF_COLORS.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => onColorChange(c.id)}
-              className={`w-6 h-6 rounded-full ${c.dot} ${color === c.id ? 'ring-2 ring-offset-2 ring-stone-500 scale-110' : ''} transition-transform`}
-            />
-          ))}
-        </div>
-        <input
-          value={name}
-          onChange={(e) => onNameChange(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') onSave(); if (e.key === 'Escape') onClose(); }}
-          autoFocus
-          className="w-full border border-stone-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 mb-4"
+      {/* Edit shelf modal */}
+      {editingShelf && (
+        <ShelfCreateModal
+          existing={editingShelf}
+          onSave={handleEdit}
+          onClose={() => setEditingShelf(null)}
+          onDelete={handleDelete}
         />
-        <div className="flex gap-2">
-          <button onClick={onSave} className="flex-1 bg-stone-900 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-stone-800 transition-colors">
-            Speichern
-          </button>
-          <button onClick={onDelete} className="px-4 py-2.5 text-red-500 hover:text-red-700 text-sm font-medium transition-colors">
-            Löschen
-          </button>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

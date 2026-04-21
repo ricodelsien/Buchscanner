@@ -11,7 +11,12 @@ function load() {
 }
 
 function persist(books) {
-  localStorage.setItem(KEY, JSON.stringify(books));
+  try {
+    localStorage.setItem(KEY, JSON.stringify(books));
+  } catch (e) {
+    console.warn('localStorage quota exceeded — could not save books', e);
+    throw e; // re-throw so callers can show an error
+  }
 }
 
 export function useBooks() {

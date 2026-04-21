@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getColor } from '../services/shelfColors';
+import { chipStyle, resolveHex } from '../services/shelfColors';
 
 export function BookDetail({ book, onClose, onDelete, onUpdateCover, onUpdate, shelves = [], onUpdateShelves }) {
   const sources = [book.customCover, book.cover, book.coverFallback].filter(Boolean);
@@ -21,8 +21,27 @@ export function BookDetail({ book, onClose, onDelete, onUpdateCover, onUpdate, s
   const handleCoverUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    // Reset input so the same file can be re-selected after an error
+    e.target.value = '';
     const reader = new FileReader();
-    reader.onload = (ev) => onUpdateCover(book.id, ev.target.result);
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        // Resize to max 600px on the longest side to keep localStorage size small
+        const MAX = 600;
+        const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        try {
+          onUpdateCover(book.id, canvas.toDataURL('image/jpeg', 0.75));
+        } catch (err) {
+          alert('Cover konnte nicht gespeichert werden — Speicher voll.');
+        }
+      };
+      img.src = ev.target.result;
+    };
     reader.readAsDataURL(file);
   };
 
@@ -143,13 +162,23 @@ export function BookDetail({ book, onClose, onDelete, onUpdateCover, onUpdate, s
             <div className="flex flex-wrap gap-1.5">
               {shelves.map((shelf) => {
                 const checked = book.shelfIds?.includes(shelf.id) ?? false;
-                const c = getColor(shelf.color);
+                const hex = resolveHex(shelf.color);
+                const style = chipStyle(hex, checked);
                 return (
-                  <button key={shelf.id} onClick={() => {
-                    const cur = book.shelfIds ?? [];
-                    onUpdateShelves(book.id, checked ? cur.filter((id) => id !== shelf.id) : [...cur, shelf.id]);
-                  }} className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border transition-all ${checked ? c.active : `${c.chip} opacity-50 hover:opacity-100`}`}>
-                    {checked && <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>}
+                  <button
+                    key={shelf.id}
+                    onClick={() => {
+                      const cur = book.shelfIds ?? [];
+                      onUpdateShelves(book.id, checked ? cur.filter((id) => id !== shelf.id) : [...cur, shelf.id]);
+                    }}
+                    style={style}
+                    className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border transition-all ${!checked && 'opacity-50 hover:opacity-100'}`}
+                  >
+                    {checked && (
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
                     {shelf.name}
                   </button>
                 );

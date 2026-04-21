@@ -8,9 +8,16 @@ export function BookCard({ book, onClick, compact = false }) {
   return (
     <button
       onClick={() => onClick(book)}
-      className="group flex flex-col bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden text-left"
+      className="group flex flex-col bg-white dark:bg-stone-800 rounded-lg border border-stone-100 dark:border-stone-700/60
+        shadow-[0_2px_8px_rgba(0,0,0,0.07),0_1px_2px_rgba(0,0,0,0.04)]
+        dark:shadow-[0_4px_16px_rgba(0,0,0,0.45)]
+        hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)]
+        dark:hover:shadow-[0_8px_28px_rgba(0,0,0,0.65)]
+        hover:-translate-y-0.5
+        transition-all duration-200 overflow-hidden text-left"
     >
-      <div className="relative aspect-[2/3] bg-stone-100 overflow-hidden">
+      {/* Cover area */}
+      <div className="relative aspect-[2/3] bg-stone-100 dark:bg-stone-700 overflow-hidden rounded-t-lg">
         {!failed && sources[srcIndex] ? (
           <img
             src={sources[srcIndex]}
@@ -21,13 +28,21 @@ export function BookCard({ book, onClick, compact = false }) {
         ) : (
           <PlaceholderCover title={book.title} />
         )}
-      </div>
-      <div className={`${compact ? 'p-2' : 'p-3'} flex flex-col gap-0.5 flex-1 relative`}>
+        {/* Favorite badge */}
         {book.favorite && (
-          <svg className="absolute top-2 right-2 w-3 h-3 text-rose-400" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-          </svg>
+          <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-white/90 dark:bg-stone-900/80 flex items-center justify-center shadow-sm">
+            <svg className="w-3 h-3 text-rose-500" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+          </div>
         )}
+      </div>
+
+      {/* Shelf edge — gives the "sitting on a shelf" look */}
+      <div className="h-1 bg-gradient-to-b from-stone-200 to-stone-300 dark:from-stone-600 dark:to-stone-700 w-full" />
+
+      {/* Metadata */}
+      <div className={`${compact ? 'p-2' : 'p-3'} flex flex-col gap-0.5 flex-1`}>
         <p className={`${compact ? 'text-xs' : 'text-sm'} font-semibold text-stone-900 dark:text-stone-100 line-clamp-2 leading-tight`}>
           {book.title}
         </p>
@@ -37,7 +52,7 @@ export function BookCard({ book, onClick, compact = false }) {
         {!compact && book.rating > 0 && (
           <div className="flex gap-0.5 mt-auto pt-1">
             {[1,2,3,4,5].map((s) => (
-              <svg key={s} className={`w-3 h-3 ${s <= book.rating ? 'text-amber-400' : 'text-stone-200 dark:text-stone-700'}`} fill="currentColor" viewBox="0 0 24 24">
+              <svg key={s} className={`w-3 h-3 ${s <= book.rating ? 'text-amber-400' : 'text-stone-200 dark:text-stone-600'}`} fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
               </svg>
             ))}
@@ -53,21 +68,11 @@ export function BookCard({ book, onClick, compact = false }) {
 
 function PlaceholderCover({ title }) {
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-stone-200 to-stone-300 p-4">
-      <svg
-        className="w-10 h-10 text-stone-400 mb-3"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={1.5}
-          d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-        />
+    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200 dark:from-stone-700 dark:to-stone-800 p-4">
+      <svg className="w-10 h-10 text-stone-300 dark:text-stone-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
       </svg>
-      <p className="text-xs text-stone-500 text-center line-clamp-3 leading-tight">
+      <p className="text-xs text-stone-400 dark:text-stone-500 text-center line-clamp-3 leading-tight">
         {title}
       </p>
     </div>

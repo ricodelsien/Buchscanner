@@ -1,16 +1,50 @@
-export const SHELF_COLORS = [
-  { id: 'amber',  chip: 'bg-amber-100 text-amber-800 border-amber-200',   dot: 'bg-amber-500',   active: 'bg-amber-500 text-white border-amber-500' },
-  { id: 'blue',   chip: 'bg-blue-100 text-blue-800 border-blue-200',      dot: 'bg-blue-500',    active: 'bg-blue-500 text-white border-blue-500' },
-  { id: 'rose',   chip: 'bg-rose-100 text-rose-800 border-rose-200',      dot: 'bg-rose-500',    active: 'bg-rose-500 text-white border-rose-500' },
-  { id: 'green',  chip: 'bg-green-100 text-green-800 border-green-200',   dot: 'bg-green-500',   active: 'bg-green-500 text-white border-green-500' },
-  { id: 'violet', chip: 'bg-violet-100 text-violet-800 border-violet-200', dot: 'bg-violet-500', active: 'bg-violet-500 text-white border-violet-500' },
-  { id: 'orange', chip: 'bg-orange-100 text-orange-800 border-orange-200', dot: 'bg-orange-500', active: 'bg-orange-500 text-white border-orange-500' },
-  { id: 'teal',   chip: 'bg-teal-100 text-teal-800 border-teal-200',      dot: 'bg-teal-500',    active: 'bg-teal-500 text-white border-teal-500' },
-  { id: 'pink',   chip: 'bg-pink-100 text-pink-800 border-pink-200',      dot: 'bg-pink-500',    active: 'bg-pink-500 text-white border-pink-500' },
+// Named colors map to hex for backward compat
+const NAMED_TO_HEX = {
+  amber:  '#f59e0b',
+  blue:   '#3b82f6',
+  rose:   '#f43f5e',
+  green:  '#22c55e',
+  violet: '#8b5cf6',
+  orange: '#f97316',
+  teal:   '#14b8a6',
+  pink:   '#ec4899',
+};
+
+/** Predefined swatches for the color picker */
+export const COLOR_PRESETS = [
+  '#f59e0b', '#ef4444', '#f97316', '#84cc16',
+  '#22c55e', '#14b8a6', '#3b82f6', '#6366f1',
+  '#8b5cf6', '#ec4899', '#f43f5e', '#a16207',
+  '#0f766e', '#1d4ed8', '#7c3aed', '#be185d',
 ];
 
-export const DEFAULT_COLOR = 'amber';
+export const DEFAULT_COLOR = '#f59e0b';
 
+/** Resolve named color or passthrough hex */
+export function resolveHex(color) {
+  return NAMED_TO_HEX[color] ?? color ?? DEFAULT_COLOR;
+}
+
+/** Generate inline chip styles from a hex color */
+export function chipStyle(hex, active = false) {
+  if (active) {
+    return { backgroundColor: hex, color: '#fff', borderColor: hex };
+  }
+  return {
+    backgroundColor: hex + '22',
+    color: hex,
+    borderColor: hex + '55',
+  };
+}
+
+// Legacy support — some components still use getColor()
 export function getColor(colorId) {
-  return SHELF_COLORS.find((c) => c.id === colorId) ?? SHELF_COLORS[0];
+  const hex = resolveHex(colorId);
+  return {
+    chip: '',
+    dot: '',
+    active: '',
+    hex,
+    chipStyle: (active) => chipStyle(hex, active),
+  };
 }

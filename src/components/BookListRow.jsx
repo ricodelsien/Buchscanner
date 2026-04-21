@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getColor } from '../services/shelfColors';
+import { chipStyle, resolveHex } from '../services/shelfColors';
 
 export function BookListRow({ book, shelves = [], onClick }) {
   const sources = [book.customCover, book.cover, book.coverFallback].filter(Boolean);
@@ -10,10 +10,10 @@ export function BookListRow({ book, shelves = [], onClick }) {
   return (
     <button
       onClick={() => onClick(book)}
-      className="flex items-center gap-4 px-4 py-3 bg-white hover:bg-stone-50 border-b border-stone-100 last:border-0 text-left w-full transition-colors"
+      className="flex items-center gap-4 px-4 py-3 bg-white dark:bg-stone-900 hover:bg-stone-50 dark:hover:bg-stone-800/60 border-b border-stone-100 dark:border-stone-800 last:border-0 text-left w-full transition-colors"
     >
       {/* Cover */}
-      <div className="shrink-0 w-10 h-14 rounded overflow-hidden bg-stone-100">
+      <div className="shrink-0 w-10 h-14 rounded overflow-hidden bg-stone-100 dark:bg-stone-800">
         {!failed && sources[srcIndex] ? (
           <img
             src={sources[srcIndex]}
@@ -23,7 +23,7 @@ export function BookListRow({ book, shelves = [], onClick }) {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <svg className="w-5 h-5 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-stone-300 dark:text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
           </div>
@@ -32,29 +32,33 @@ export function BookListRow({ book, shelves = [], onClick }) {
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-stone-900 truncate">{book.title}</p>
-        <p className="text-xs text-stone-500 truncate">{book.authors?.join(', ')}</p>
-        {book.year && <p className="text-xs text-stone-400">{book.year}</p>}
+        <p className="text-sm font-semibold text-stone-900 dark:text-stone-100 truncate">{book.title}</p>
+        <p className="text-xs text-stone-500 dark:text-stone-400 truncate">{book.authors?.join(', ')}</p>
+        {book.year && <p className="text-xs text-stone-400 dark:text-stone-500">{book.year}</p>}
       </div>
 
       {/* Shelf tags */}
       {bookShelves.length > 0 && (
         <div className="shrink-0 flex flex-wrap gap-1 justify-end max-w-[120px]">
           {bookShelves.slice(0, 2).map((s) => {
-            const c = getColor(s.color);
+            const hex = resolveHex(s.color);
             return (
-              <span key={s.id} className={`text-xs px-2 py-0.5 rounded-full border ${c.chip}`}>
+              <span
+                key={s.id}
+                style={chipStyle(hex, false)}
+                className="text-xs px-2 py-0.5 rounded-full border"
+              >
                 {s.name}
               </span>
             );
           })}
           {bookShelves.length > 2 && (
-            <span className="text-xs text-stone-400">+{bookShelves.length - 2}</span>
+            <span className="text-xs text-stone-400 dark:text-stone-500">+{bookShelves.length - 2}</span>
           )}
         </div>
       )}
 
-      <svg className="w-4 h-4 text-stone-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className="w-4 h-4 text-stone-300 dark:text-stone-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
       </svg>
     </button>

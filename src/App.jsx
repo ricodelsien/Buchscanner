@@ -85,8 +85,15 @@ export default function App() {
 
   const selectedBook = selected ? books.find((b) => b.id === selected.id) ?? selected : null;
 
+  function getTimeGreeting() {
+    const h = new Date().getHours();
+    if (h >= 3 && h < 12) return 'Guten Morgen';
+    if (h >= 12 && h < 18) return 'Guten Tag';
+    return 'Guten Abend';
+  }
+
   const greeting = profile?.name
-    ? `Hallo, ${profile.name}`
+    ? `${getTimeGreeting()}, ${profile.name}`
     : 'Mediathek';
 
   return (
