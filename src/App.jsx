@@ -4,6 +4,7 @@ import { useShelves } from './hooks/useShelves';
 import { useScanner } from './hooks/useScanner';
 import { useProfile } from './hooks/useProfile';
 import { useDarkMode } from './hooks/useDarkMode';
+import { useTheme } from './hooks/useTheme';
 import { fetchBookByISBN } from './services/bookApi';
 import { detectGenre } from './services/genreMap';
 import { BookGrid } from './components/BookGrid';
@@ -23,6 +24,7 @@ export default function App() {
   const { shelves, addShelf, updateShelf, removeShelf, findOrCreate } = useShelves();
   const { profile, saveProfile, hasProfile } = useProfile();
   const { dark, toggle: toggleDark } = useDarkMode();
+  const { theme, setTheme } = useTheme();
 
   const [selected, setSelected] = useState(null);
   const [toasts, setToasts] = useState([]);
@@ -120,7 +122,7 @@ export default function App() {
     : 'Mediathek';
 
   return (
-    <div className="h-full flex flex-col bg-stone-50 dark:bg-stone-950 overflow-hidden">
+    <div className="h-full flex flex-col theme-bg overflow-hidden">
 
       {/* Profile setup (first launch) */}
       {(showProfileSetup || editProfile) && (
@@ -157,11 +159,13 @@ export default function App() {
           onEditProfile={() => setEditProfile(true)}
           dark={dark}
           onToggleDark={toggleDark}
+          theme={theme}
+          onSetTheme={setTheme}
         />
       )}
 
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 shadow-sm">
+      <header className="sticky top-0 z-20 theme-surface-2 border-b border-stone-200 dark:border-stone-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <svg className="w-6 h-6 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

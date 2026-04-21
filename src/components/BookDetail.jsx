@@ -73,7 +73,7 @@ export function BookDetail({ book, onClose, onDelete, onUpdateCover, onUpdate, o
     <div className="fixed inset-0 z-40 flex items-end sm:items-center justify-center" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
-      <div className="relative z-10 bg-white dark:bg-stone-900 w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+      <div className="relative z-10 theme-surface w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
 
         {/* Action bar */}
         <div className="flex items-center justify-between px-4 pt-4 pb-0">

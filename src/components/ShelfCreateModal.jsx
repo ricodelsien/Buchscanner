@@ -19,7 +19,7 @@ export function ShelfCreateModal({ onSave, onClose, onDelete, existing }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative z-10 bg-white dark:bg-stone-900 w-full sm:max-w-sm sm:rounded-2xl rounded-t-2xl shadow-2xl">
+      <div className="relative z-10 theme-surface w-full sm:max-w-sm sm:rounded-2xl rounded-t-2xl shadow-2xl">
         <div className="p-5">
           <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 mb-4">
             {existing ? 'Regal bearbeiten' : 'Neues Regal'}

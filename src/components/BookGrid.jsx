@@ -11,7 +11,7 @@ export function BookGrid({ books, shelves = [], onSelect, viewMode = 'grid' }) {
 
   if (viewMode === 'list') {
     return (
-      <div className="mx-4 mt-4 bg-white dark:bg-stone-900 rounded-xl shadow-sm dark:shadow-stone-950/50 overflow-hidden border border-stone-100 dark:border-stone-800">
+      <div className="mx-4 mt-4 theme-surface rounded-xl shadow-sm dark:shadow-stone-950/50 overflow-hidden border border-stone-100 dark:border-stone-800">
         {books.map((book) => (
           <BookListRow key={book.id} book={book} shelves={shelves} onClick={onSelect} />
         ))}
@@ -20,7 +20,7 @@ export function BookGrid({ books, shelves = [], onSelect, viewMode = 'grid' }) {
   }
 
   return (
-    <div className="p-4 bg-stone-50/80 dark:bg-stone-950/60 min-h-full">
+    <div className="p-4 theme-bg min-h-full">
       <div className={`grid ${GRID_COLS[viewMode] ?? GRID_COLS.grid} gap-3`}>
         {books.map((book) => (
           <BookCard key={book.id} book={book} onClick={onSelect} compact={viewMode === 'compact'} />

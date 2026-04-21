@@ -31,6 +31,20 @@
   }
 }
 
+/* ── Theme CSS variables (set dynamically via useTheme hook) ─────────── */
+:root {
+  --theme-bg:       #fafaf9;
+  --theme-surface:  #ffffff;
+  --theme-surface-2: #f5f5f4;
+}
+
+/* Utility classes that consume the theme variables */
+@layer utilities {
+  .theme-bg        { background-color: var(--theme-bg); }
+  .theme-surface   { background-color: var(--theme-surface); }
+  .theme-surface-2 { background-color: var(--theme-surface-2); }
+}
+
 @layer utilities {
   .line-clamp-2 {
     display: -webkit-box;

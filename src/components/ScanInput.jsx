@@ -56,7 +56,7 @@ export function ScanInput({ onScan, isLoading }) {
           className="fixed inset-0 z-40 bg-black/40 flex items-end"
           onClick={(e) => e.target === e.currentTarget && setOpen(false)}
         >
-          <div className="w-full bg-white rounded-t-2xl p-6 shadow-2xl">
+          <div className="w-full theme-surface rounded-t-2xl p-6 shadow-2xl">
             <h3 className="text-base font-semibold text-stone-900 mb-4">
               ISBN hinzufügen
             </h3>

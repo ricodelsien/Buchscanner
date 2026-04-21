@@ -28,7 +28,7 @@ export function FilterBar({ shelves, books, activeShelfId, onShelfChange, viewMo
   };
 
   return (
-    <div className="bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800">
+    <div className="theme-surface-2 border-b border-stone-200 dark:border-stone-800">
       {/* Chips row */}
       <div className="flex items-center gap-2 px-4 py-2.5 overflow-x-auto scrollbar-none">
         {/* Alle */}

@@ -26,7 +26,7 @@ export function ProfileSetup({ onSave, existing }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-      <div className="bg-white dark:bg-stone-900 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+      <div className="theme-surface rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
 
         {/* Step indicator */}
         <div className="flex gap-1 p-4 pb-0">

@@ -10,7 +10,7 @@ export function BookListRow({ book, shelves = [], onClick }) {
   return (
     <button
       onClick={() => onClick(book)}
-      className="flex items-center gap-4 px-4 py-3 bg-white dark:bg-stone-900 hover:bg-stone-50 dark:hover:bg-stone-800/60 border-b border-stone-100 dark:border-stone-800 last:border-0 text-left w-full transition-colors"
+      className="flex items-center gap-4 px-4 py-3 theme-surface hover:bg-stone-50 dark:hover:bg-stone-800/40 border-b border-stone-100 dark:border-stone-800 last:border-0 text-left w-full transition-colors"
     >
       {/* Cover */}
       <div className="shrink-0 w-10 h-14 rounded overflow-hidden bg-stone-100 dark:bg-stone-800">
