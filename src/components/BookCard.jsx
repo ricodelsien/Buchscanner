@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 export function BookCard({ book, onClick }) {
-  const sources = [book.cover, book.coverFallback].filter(Boolean);
+  const sources = [book.customCover, book.cover, book.coverFallback].filter(Boolean);
   const [srcIndex, setSrcIndex] = useState(0);
   const failed = srcIndex >= sources.length;
 

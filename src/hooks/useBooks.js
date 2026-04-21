@@ -35,10 +35,18 @@ export function useBooks() {
     });
   }, []);
 
+  const updateBook = useCallback((id, patch) => {
+    setBooks((prev) => {
+      const next = prev.map((b) => (b.id === id ? { ...b, ...patch } : b));
+      persist(next);
+      return next;
+    });
+  }, []);
+
   const findByISBN = useCallback(
     (isbn) => books.find((b) => b.isbn === isbn.replace(/[^0-9X]/gi, '')),
     [books]
   );
 
-  return { books, addBook, removeBook, findByISBN };
+  return { books, addBook, removeBook, updateBook, findByISBN };
 }

@@ -1,9 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
-export function BookDetail({ book, onClose, onDelete }) {
-  const sources = [book.cover, book.coverFallback].filter(Boolean);
+export function BookDetail({ book, onClose, onDelete, onUpdateCover }) {
+  const sources = [book.customCover, book.cover, book.coverFallback].filter(Boolean);
   const [srcIndex, setSrcIndex] = useState(0);
   const imgFailed = srcIndex >= sources.length;
+  const fileInputRef = useRef(null);
+
+  // Reset srcIndex wenn sich das Buch ändert (z.B. nach Cover-Upload)
+  useEffect(() => { setSrcIndex(0); }, [book.id, book.customCover]);
 
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose();
@@ -11,19 +15,29 @@ export function BookDetail({ book, onClose, onDelete }) {
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
 
+  const handleCoverUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      onUpdateCover(book.id, ev.target.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
   if (!book) return null;
+
+  const hasCover = !imgFailed && sources[srcIndex];
 
   return (
     <div
       className="fixed inset-0 z-40 flex items-end sm:items-center justify-center"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
-      {/* Sheet */}
       <div className="relative z-10 bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
-        {/* Close button */}
+        {/* Close */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-stone-100 hover:bg-stone-200 transition-colors"
@@ -35,21 +49,59 @@ export function BookDetail({ book, onClose, onDelete }) {
         </button>
 
         <div className="flex gap-5 p-6 pb-4">
-          {/* Cover */}
+          {/* Cover + Upload */}
           <div className="shrink-0 w-24 sm:w-32">
-            {!imgFailed && sources[srcIndex] ? (
-              <img
-                src={sources[srcIndex]}
-                alt={book.title}
-                onError={() => setSrcIndex((i) => i + 1)}
-                className="w-full rounded-lg shadow-md object-cover"
-              />
-            ) : (
-              <div className="w-full aspect-[2/3] rounded-lg bg-stone-200 flex items-center justify-center">
-                <svg className="w-8 h-8 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            <div className="relative group">
+              {hasCover ? (
+                <img
+                  src={sources[srcIndex]}
+                  alt={book.title}
+                  onError={() => setSrcIndex((i) => i + 1)}
+                  className="w-full rounded-lg shadow-md object-cover"
+                />
+              ) : (
+                <div className="w-full aspect-[2/3] rounded-lg bg-stone-100 flex flex-col items-center justify-center gap-2">
+                  <svg className="w-8 h-8 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                </div>
+              )}
+
+              {/* Upload-Overlay beim Hover (oder immer sichtbar wenn kein Cover) */}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className={`absolute inset-0 rounded-lg flex flex-col items-center justify-center gap-1 transition-opacity
+                  ${hasCover
+                    ? 'bg-black/0 group-hover:bg-black/40 opacity-0 group-hover:opacity-100'
+                    : 'bg-amber-50 border-2 border-dashed border-amber-300 opacity-100'
+                  }`}
+                title="Cover hochladen"
+              >
+                <svg className={`w-5 h-5 ${hasCover ? 'text-white' : 'text-amber-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
-              </div>
+                <span className={`text-xs font-medium ${hasCover ? 'text-white' : 'text-amber-600'}`}>
+                  {hasCover ? 'Ändern' : 'Hochladen'}
+                </span>
+              </button>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleCoverUpload}
+              />
+            </div>
+
+            {/* Eigenes Cover entfernen */}
+            {book.customCover && (
+              <button
+                onClick={() => onUpdateCover(book.id, null)}
+                className="mt-1.5 w-full text-xs text-stone-400 hover:text-red-500 transition-colors text-center"
+              >
+                Zurücksetzen
+              </button>
             )}
           </div>
 

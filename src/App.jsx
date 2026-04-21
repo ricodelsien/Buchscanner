@@ -10,7 +10,7 @@ import { ScanInput } from './components/ScanInput';
 let toastId = 0;
 
 export default function App() {
-  const { books, addBook, removeBook, findByISBN } = useBooks();
+  const { books, addBook, removeBook, updateBook, findByISBN } = useBooks();
   const [selected, setSelected] = useState(null);
   const [toasts, setToasts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -80,12 +80,16 @@ export default function App() {
       {/* Detail modal */}
       {selected && (
         <BookDetail
-          book={selected}
+          book={books.find((b) => b.id === selected.id) ?? selected}
           onClose={() => setSelected(null)}
           onDelete={(id) => {
             removeBook(id);
             setSelected(null);
             showToast('Buch entfernt.', 'info');
+          }}
+          onUpdateCover={(id, dataUrl) => {
+            updateBook(id, { customCover: dataUrl });
+            showToast(dataUrl ? 'Cover aktualisiert.' : 'Cover zurückgesetzt.', 'success');
           }}
         />
       )}
