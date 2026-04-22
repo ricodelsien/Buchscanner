@@ -215,3 +215,27 @@
   gap: 2px;
   padding: 0 16px;
 }
+
+/* ── Heart burst animation ───────────────────────────────────────────────── */
+@keyframes heartBurst {
+  0%   { transform: scale(0.3); opacity: 0; }
+  15%  { transform: scale(1.5); opacity: 1; }
+  50%  { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(0.3); opacity: 0; }
+}
+.heart-burst {
+  animation: heartBurst 0.65s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  pointer-events: none;
+}
+
+/* ── Safe-area & nav padding ─────────────────────────────────────────────── */
+.pb-safe   { padding-bottom: env(safe-area-inset-bottom); }
+.pb-nav    { padding-bottom: calc(3.75rem + env(safe-area-inset-bottom)); }
+
+/* ── Book card select ring ───────────────────────────────────────────────── */
+@keyframes selectPop {
+  0%   { transform: scale(0.6); }
+  60%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+.select-pop { animation: selectPop 0.2s ease-out forwards; }

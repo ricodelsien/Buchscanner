@@ -6,26 +6,29 @@ import { BookListRow } from './BookListRow';
 import { SelectionToolbar } from './SelectionToolbar';
 import { SpineView } from './SpineView';
 
-/* ── Column count per viewMode + container width ──────────────────────────── */
+/* ── Responsive column count ──────────────────────────────────────────────── */
 function calcCols(width, mode) {
   if (mode === 'compact') {
-    // min 6 always
-    if (width < 640) return 6;
-    if (width < 900) return 7;
+    if (width < 360) return 4;
+    if (width < 520) return 5;
+    if (width < 720) return 6;
+    if (width < 960) return 7;
     return 8;
   }
-  // grid — min 4 always
-  if (width < 640) return 4;
-  if (width < 900) return 5;
+  // grid
+  if (width < 360) return 2;
+  if (width < 490) return 3;
+  if (width < 680) return 4;
+  if (width < 920) return 5;
   return 6;
 }
 
 function useContainerCols(ref, viewMode) {
-  const [cols, setCols] = useState(viewMode === 'compact' ? 6 : 4);
+  const [cols, setCols] = useState(viewMode === 'compact' ? 5 : 3);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const obs = new ResizeObserver(([entry]) => setCols(calcCols(entry.contentRect.width, viewMode)));
+    const obs = new ResizeObserver(([e]) => setCols(calcCols(e.contentRect.width, viewMode)));
     obs.observe(el);
     setCols(calcCols(el.offsetWidth, viewMode));
     return () => obs.disconnect();
@@ -33,12 +36,12 @@ function useContainerCols(ref, viewMode) {
   return cols;
 }
 
-/* ── Shelf bar ────────────────────────────────────────────────────────────── */
-function ShelfBar() {
-  return <div className="shelf-bar" />;
-}
+const COL_CLASS = {
+  2: 'grid-cols-2', 3: 'grid-cols-3', 4: 'grid-cols-4',
+  5: 'grid-cols-5', 6: 'grid-cols-6', 7: 'grid-cols-7', 8: 'grid-cols-8',
+};
 
-/* ── Sortable book card wrapper ───────────────────────────────────────────── */
+/* ── Sortable card wrapper ────────────────────────────────────────────────── */
 function SortableBookCard({ book, selectMode, ...props }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: book.id,
@@ -58,56 +61,18 @@ function SortableBookCard({ book, selectMode, ...props }) {
   );
 }
 
-/* ── ShelfGrid: groups books into rows, inserts ShelfBar between ──────────── */
-function ShelfGrid({ books, cols, gap, viewMode, ...cardProps }) {
-  const rows = [];
-  for (let i = 0; i < books.length; i += cols) {
-    rows.push(books.slice(i, i + cols));
-  }
-
-  const colClass = {
-    2: 'grid-cols-2', 3: 'grid-cols-3', 4: 'grid-cols-4',
-    5: 'grid-cols-5', 6: 'grid-cols-6', 7: 'grid-cols-7', 8: 'grid-cols-8',
-  }[cols] ?? 'grid-cols-4';
-
-  return (
-    <div>
-      {rows.map((row, i) => (
-        <div key={i}>
-          <div className={`grid ${colClass} gap-3 px-4 pt-4`}>
-            {row.map((book) => (
-              <SortableBookCard
-                key={book.id}
-                book={book}
-                compact={viewMode === 'compact'}
-                {...cardProps}
-              />
-            ))}
-            {/* Empty slots to keep shelf width consistent */}
-            {Array.from({ length: cols - row.length }).map((_, j) => (
-              <div key={`empty-${j}`} />
-            ))}
-          </div>
-          <div className="px-4 mt-3">
-            <ShelfBar />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 /* ── Main BookGrid ────────────────────────────────────────────────────────── */
 export function BookGrid({
   books, shelves = [], onSelect, viewMode = 'grid',
   onBatchDelete, onBatchAddToShelf, onToggleFavorite, activeDragId,
+  onSelectModeChange,
 }) {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [band, setBand] = useState(null);
 
-  const gridRef = useRef(null);
-  const dragRef = useRef(null);
+  const gridRef      = useRef(null);
+  const dragRef      = useRef(null);
   const initialSelRef = useRef(new Set());
 
   const cols = useContainerCols(gridRef, viewMode);
@@ -115,13 +80,15 @@ export function BookGrid({
   const enterSelectMode = useCallback((bookId) => {
     setSelectMode(true);
     setSelectedIds(new Set([bookId]));
-  }, []);
+    onSelectModeChange?.(true);
+  }, [onSelectModeChange]);
 
   const exitSelectMode = useCallback(() => {
     setSelectMode(false);
     setSelectedIds(new Set());
     setBand(null);
-  }, []);
+    onSelectModeChange?.(false);
+  }, [onSelectModeChange]);
 
   const toggleBook = useCallback((bookId) => {
     setSelectedIds((prev) => {
@@ -206,11 +173,11 @@ export function BookGrid({
 
   if (books.length === 0) return <EmptyState />;
 
-  // ── List view ──────────────────────────────────────────────────────────────
+  // ── Listenansicht ──────────────────────────────────────────────────────────
   if (viewMode === 'list') {
     return (
       <div className="relative">
-        <div className="mx-4 mt-4 theme-surface rounded-xl shadow-sm dark:shadow-stone-950/50 overflow-hidden border border-stone-100 dark:border-stone-800">
+        <div className="mx-3 mt-3 mb-2 theme-surface rounded-2xl shadow-sm overflow-hidden border border-stone-100 dark:border-stone-800">
           {books.map((book) => (
             <BookListRow
               key={book.id} book={book} shelves={shelves}
@@ -233,7 +200,7 @@ export function BookGrid({
     );
   }
 
-  // ── Spine / bookshelf view ─────────────────────────────────────────────────
+  // ── Buchrückenansicht ──────────────────────────────────────────────────────
   if (viewMode === 'spine') {
     return (
       <div className="relative pt-4" ref={gridRef}>
@@ -242,42 +209,48 @@ export function BookGrid({
     );
   }
 
-  // ── Grid / Compact view with real shelves ──────────────────────────────────
+  // ── Raster- / Kompaktansicht ───────────────────────────────────────────────
+  const colClass = COL_CLASS[cols] ?? 'grid-cols-3';
+
   const sharedCardProps = {
-    shelves,
     onClick: onSelect,
     selectMode,
     onSelect: toggleBook,
     onLongPress: enterSelectMode,
     onToggleFavorite,
+    compact: viewMode === 'compact',
   };
 
   return (
     <div className="relative">
       <div
         ref={gridRef}
-        className="theme-bg min-h-full relative pb-4"
+        className="theme-bg min-h-full relative"
         onMouseDown={handleMouseDown}
         onTouchMove={handleTouchMove}
         style={{ userSelect: selectMode ? 'none' : 'auto' }}
       >
         <SortableContext items={books.map((b) => b.id)} strategy={rectSortingStrategy}>
-          <ShelfGrid
-            books={books}
-            cols={cols}
-            viewMode={viewMode}
-            {...sharedCardProps}
-          />
+          <div className={`grid ${colClass} gap-2.5 px-3 py-3`}>
+            {books.map((book) => (
+              <SortableBookCard
+                key={book.id}
+                book={book}
+                {...sharedCardProps}
+                selected={selectedIds.has(book.id)}
+              />
+            ))}
+          </div>
         </SortableContext>
 
-        {/* Rubber-band selection rectangle */}
+        {/* Gummibandauswahl */}
         {band && (
           <div
             style={{
               position: 'absolute', left: band.x, top: band.y, width: band.w, height: band.h,
-              border: '2px solid var(--accent)',
-              backgroundColor: 'color-mix(in srgb, var(--accent) 12%, transparent)',
-              pointerEvents: 'none', borderRadius: 4,
+              border: '1.5px solid var(--accent)',
+              backgroundColor: 'color-mix(in srgb, var(--accent) 10%, transparent)',
+              pointerEvents: 'none', borderRadius: 6,
             }}
           />
         )}
@@ -295,15 +268,22 @@ export function BookGrid({
   );
 }
 
+/** Gibt zurück ob eine Drag-Operation alle ausgewählten Bücher bewegt (für DragOverlay in App) */
+export function isDragWithSelection(dragId, selectedIds) {
+  return selectedIds && selectedIds.has(dragId) && selectedIds.size > 1;
+}
+
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center flex-1 py-24 px-6 text-center">
-      <svg className="w-16 h-16 text-stone-300 dark:text-stone-700 mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-      </svg>
-      <h2 className="text-xl font-semibold text-stone-400 dark:text-stone-500 mb-2">Noch keine Bücher</h2>
-      <p className="text-stone-400 dark:text-stone-500 text-sm max-w-xs">
-        Scanne den Barcode eines Buches oder gib die ISBN manuell ein, um deine Schmökerstube zu starten.
+      <div className="w-20 h-20 rounded-2xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center mb-6">
+        <svg className="w-10 h-10 text-stone-300 dark:text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+        </svg>
+      </div>
+      <h2 className="text-lg font-semibold text-stone-400 dark:text-stone-500 mb-2">Noch keine Bücher</h2>
+      <p className="text-sm text-stone-400 dark:text-stone-500 max-w-xs leading-relaxed">
+        Scanne den Barcode eines Buches oder gib die ISBN manuell ein, um deine Sammlung zu starten.
       </p>
     </div>
   );
