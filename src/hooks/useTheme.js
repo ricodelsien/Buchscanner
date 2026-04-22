@@ -69,6 +69,22 @@ export const THEMES = [
     },
     swatch: { bg: '#e6e6e4', surface: '#f0f0ee', accent: '#0f766e' },
   },
+  {
+    id: 'ios',
+    name: 'iOS Clean',
+    description: 'Klares System-Design',
+    light: {
+      bg: '#F2F2F7', surface: '#FFFFFF', surface2: '#EFEFF4',
+      accent: '#007AFF', accentHover: '#0062CC', accentFg: '#FFFFFF',
+      shelfTop: '#C7C7CC', shelfFace: '#AEAEB2', shelfShadow: 'rgba(0,0,0,0.10)',
+    },
+    dark: {
+      bg: '#1C1C1E', surface: '#2C2C2E', surface2: '#3A3A3C',
+      accent: '#0A84FF', accentHover: '#0070E0', accentFg: '#FFFFFF',
+      shelfTop: '#3A3A3C', shelfFace: '#2C2C2E', shelfShadow: 'rgba(0,0,0,0.50)',
+    },
+    swatch: { bg: '#F2F2F7', surface: '#FFFFFF', accent: '#007AFF' },
+  },
 ];
 
 export function getTheme(id) {
