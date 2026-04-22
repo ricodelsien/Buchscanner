@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { arrayMove } from '@dnd-kit/sortable';
 
 const KEY = 'buchscanner_books';
 
@@ -53,5 +54,16 @@ export function useBooks() {
     [books]
   );
 
-  return { books, addBook, removeBook, updateBook, findByISBN };
+  const reorderBooks = useCallback((activeId, overId) => {
+    setBooks((prev) => {
+      const oldIndex = prev.findIndex((b) => b.id === activeId);
+      const newIndex = prev.findIndex((b) => b.id === overId);
+      if (oldIndex === -1 || newIndex === -1) return prev;
+      const next = arrayMove(prev, oldIndex, newIndex);
+      persist(next);
+      return next;
+    });
+  }, []);
+
+  return { books, addBook, removeBook, updateBook, findByISBN, reorderBooks };
 }

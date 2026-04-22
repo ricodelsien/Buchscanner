@@ -1,4 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
+import { SortableContext, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { BookCard } from './BookCard';
 import { BookListRow } from './BookListRow';
 import { SelectionToolbar } from './SelectionToolbar';
@@ -8,7 +10,36 @@ const GRID_COLS = {
   compact: 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6',
 };
 
-export function BookGrid({ books, shelves = [], onSelect, viewMode = 'grid', onBatchDelete, onBatchAddToShelf, onToggleFavorite }) {
+/** Sortable wrapper around BookCard */
+function SortableBookCard({ book, selectMode, ...props }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: book.id, disabled: selectMode });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <BookCard
+        book={book}
+        selectMode={selectMode}
+        isDragging={isDragging}
+        dragHandleProps={{ ...attributes, ...listeners }}
+        {...props}
+      />
+    </div>
+  );
+}
+
+export function BookGrid({ books, shelves = [], onSelect, viewMode = 'grid', onBatchDelete, onBatchAddToShelf, onToggleFavorite, activeDragId }) {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [band, setBand] = useState(null);
@@ -112,14 +143,12 @@ export function BookGrid({ books, shelves = [], onSelect, viewMode = 'grid', onB
 
   // Batch operations
   const handleBatchDelete = useCallback(() => {
-    const ids = [...selectedIds];
-    onBatchDelete?.(ids);
+    onBatchDelete?.([...selectedIds]);
     exitSelectMode();
   }, [selectedIds, onBatchDelete, exitSelectMode]);
 
   const handleBatchShelf = useCallback((shelfId) => {
-    const ids = [...selectedIds];
-    onBatchAddToShelf?.(ids, shelfId);
+    onBatchAddToShelf?.([...selectedIds], shelfId);
     exitSelectMode();
   }, [selectedIds, onBatchAddToShelf, exitSelectMode]);
 
@@ -166,21 +195,24 @@ export function BookGrid({ books, shelves = [], onSelect, viewMode = 'grid', onB
         onTouchMove={handleTouchMove}
         style={{ userSelect: selectMode ? 'none' : 'auto' }}
       >
-        <div className={`grid ${GRID_COLS[viewMode] ?? GRID_COLS.grid} gap-3`}>
-          {books.map((book) => (
-            <BookCard
-              key={book.id}
-              book={book}
-              onClick={onSelect}
-              compact={viewMode === 'compact'}
-              selectMode={selectMode}
-              selected={selectedIds.has(book.id)}
-              onSelect={toggleBook}
-              onLongPress={enterSelectMode}
-              onToggleFavorite={onToggleFavorite}
-            />
-          ))}
-        </div>
+        <SortableContext items={books.map((b) => b.id)} strategy={rectSortingStrategy}>
+          <div className={`grid ${GRID_COLS[viewMode] ?? GRID_COLS.grid} gap-3`}>
+            {books.map((book) => (
+              <SortableBookCard
+                key={book.id}
+                book={book}
+                shelves={shelves}
+                onClick={onSelect}
+                compact={viewMode === 'compact'}
+                selectMode={selectMode}
+                selected={selectedIds.has(book.id)}
+                onSelect={toggleBook}
+                onLongPress={enterSelectMode}
+                onToggleFavorite={onToggleFavorite}
+              />
+            ))}
+          </div>
+        </SortableContext>
 
         {/* Rubber-band selection rectangle */}
         {band && (

@@ -1,9 +1,10 @@
 import { useState, useRef, useCallback } from 'react';
+import { resolveHex } from '../services/shelfColors';
 
 const STATUS_COLORS = { want: '#3b82f6', reading: '#f59e0b', read: '#22c55e', dropped: '#78716c' };
 const STATUS_LABELS = { want: 'Möchte lesen', reading: 'Lese gerade', read: 'Gelesen', dropped: 'Abgebrochen' };
 
-export function BookCard({ book, onClick, compact = false, selectMode = false, selected = false, onSelect, onLongPress, onToggleFavorite }) {
+export function BookCard({ book, shelves = [], onClick, compact = false, selectMode = false, selected = false, onSelect, onLongPress, onToggleFavorite, dragHandleProps = {}, isDragging = false }) {
   const sources = [book.customCover, book.cover, book.coverFallback].filter(Boolean);
   const [srcIndex, setSrcIndex] = useState(0);
   const failed = srcIndex >= sources.length;
@@ -60,6 +61,10 @@ export function BookCard({ book, onClick, compact = false, selectMode = false, s
     onClick(book);
   }, [book, onClick, selectMode, onSelect, onToggleFavorite]);
 
+  // Shelf accent stripe color
+  const primaryShelf = shelves.find((s) => book.shelfIds?.includes(s.id));
+  const stripeColor = primaryShelf ? resolveHex(primaryShelf.color) : null;
+
   return (
     <button
       data-book-id={book.id}
@@ -68,7 +73,9 @@ export function BookCard({ book, onClick, compact = false, selectMode = false, s
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerLeave={cancelPress}
+      {...dragHandleProps}
       className={`group flex flex-col theme-surface rounded-lg border transition-all duration-200 overflow-hidden text-left select-none
+        ${isDragging ? 'opacity-40 scale-95' : ''}
         ${selected
           ? 'border-[var(--accent)] ring-2 ring-[var(--accent)] ring-opacity-60 shadow-lg'
           : 'border-stone-100 dark:border-stone-700/60 shadow-[0_2px_8px_rgba(0,0,0,0.07),0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.45)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_8px_28px_rgba(0,0,0,0.65)] hover:-translate-y-0.5'
@@ -140,8 +147,13 @@ export function BookCard({ book, onClick, compact = false, selectMode = false, s
         )}
       </div>
 
-      {/* Shelf edge */}
-      <div className="h-1 bg-gradient-to-b from-stone-200 to-stone-300 dark:from-stone-600 dark:to-stone-700 w-full" />
+      {/* Shelf accent stripe */}
+      <div
+        className="h-1 w-full transition-colors duration-200"
+        style={stripeColor
+          ? { backgroundColor: stripeColor }
+          : { background: 'linear-gradient(to bottom, rgb(231 229 228), rgb(214 211 208))' }}
+      />
 
       {/* Metadata */}
       <div className={`${compact ? 'p-2' : 'p-3'} flex flex-col gap-0.5 flex-1`}>
