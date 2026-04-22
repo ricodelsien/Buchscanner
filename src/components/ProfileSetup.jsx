@@ -63,7 +63,7 @@ export function ProfileSetup({ onSave, existing }) {
               <button
                 onClick={() => setStep(1)}
                 disabled={!name.trim()}
-                className="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-amber-200 dark:disabled:bg-amber-900/40 text-white rounded-xl py-3 text-sm font-semibold transition-colors"
+                className="w-full btn-accent rounded-xl py-3 text-sm font-semibold transition-colors"
               >
                 Weiter
               </button>
@@ -101,7 +101,7 @@ export function ProfileSetup({ onSave, existing }) {
               <div className="flex gap-2">
                 <button
                   onClick={finish}
-                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-white rounded-xl py-3 text-sm font-semibold transition-colors"
+                  className="flex-1 btn-accent rounded-xl py-3 text-sm font-semibold transition-colors"
                 >
                   Loslegen
                 </button>

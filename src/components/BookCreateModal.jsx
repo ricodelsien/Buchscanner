@@ -326,7 +326,7 @@ export function BookCreateModal({ onSave, onClose, prefillIsbn = '', existing = 
         {/* Footer */}
         <div className="px-5 py-4 border-t border-stone-100 dark:border-stone-800 flex gap-2 shrink-0">
           <button onClick={save} disabled={!title.trim()}
-            className="flex-1 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-200 dark:disabled:bg-amber-900/40 text-white rounded-xl py-2.5 text-sm font-semibold transition-colors">
+            className="flex-1 btn-accent rounded-xl py-2.5 text-sm font-semibold">
             {isEdit ? 'Änderungen speichern' : 'Buch speichern'}
           </button>
           <button onClick={onClose}

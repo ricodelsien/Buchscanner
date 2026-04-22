@@ -6,7 +6,6 @@
   html {
     height: 100%;
     overscroll-behavior: none;
-    /* Disable double-tap zoom while keeping scroll/pan */
     touch-action: manipulation;
   }
   body {
@@ -19,7 +18,7 @@
     display: flex;
     flex-direction: column;
   }
-  /* iOS Safari zooms in on inputs smaller than 16px — force 16px to prevent that */
+  /* iOS Safari zooms in on inputs < 16px — prevents auto-zoom on focus */
   input[type="text"],
   input[type="number"],
   input[type="url"],
@@ -31,18 +30,63 @@
   }
 }
 
-/* ── Theme CSS variables (set dynamically via useTheme hook) ─────────── */
+/* ── Theme CSS variables ─────────────────────────────────────────────────── */
 :root {
-  --theme-bg:       #fafaf9;
-  --theme-surface:  #ffffff;
+  --theme-bg:        #fafaf9;
+  --theme-surface:   #ffffff;
   --theme-surface-2: #f5f5f4;
+  --accent:          #d97706;
+  --accent-hover:    #b45309;
+  --accent-fg:       #ffffff;
 }
 
-/* Utility classes that consume the theme variables */
+/* ── Theme-aware utility classes ─────────────────────────────────────────── */
 @layer utilities {
   .theme-bg        { background-color: var(--theme-bg); }
   .theme-surface   { background-color: var(--theme-surface); }
   .theme-surface-2 { background-color: var(--theme-surface-2); }
+
+  /* Primary accent button — replaces all bg-amber-500 hover:bg-amber-600 */
+  .btn-accent {
+    background-color: var(--accent);
+    color: var(--accent-fg);
+    transition: background-color 0.15s;
+  }
+  .btn-accent:hover:not(:disabled) {
+    background-color: var(--accent-hover);
+  }
+  .btn-accent:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* Tinted accent for subtle backgrounds (chips, tags) */
+  .accent-subtle {
+    background-color: color-mix(in srgb, var(--accent) 12%, transparent);
+    color: var(--accent);
+    border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+
+  /* Focus ring using accent */
+  .ring-accent { --tw-ring-color: var(--accent); }
+}
+
+/* Make dark-mode inputs follow the surface theme color */
+@layer base {
+  .dark input[type="text"],
+  .dark input[type="number"],
+  .dark input[type="url"],
+  .dark input[type="email"],
+  .dark input[type="search"],
+  .dark textarea,
+  .dark select {
+    background-color: color-mix(in srgb, var(--theme-surface) 80%, var(--theme-surface-2) 20%);
+    color: #f1f0ef;
+  }
+  .dark input::placeholder,
+  .dark textarea::placeholder {
+    color: #78716c;
+  }
 }
 
 @layer utilities {

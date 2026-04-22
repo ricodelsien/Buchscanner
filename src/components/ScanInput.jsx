@@ -44,7 +44,7 @@ export function ScanInput({ onScan, isLoading }) {
       <button
         onClick={openPanel}
         disabled={isLoading}
-        className="fixed bottom-6 right-6 z-30 w-14 h-14 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-white rounded-full shadow-lg flex items-center justify-center transition-colors"
+        className="fixed bottom-6 right-6 z-30 w-14 h-14 btn-accent rounded-full shadow-lg flex items-center justify-center transition-colors"
         aria-label="ISBN scannen oder eingeben"
       >
         {isLoading ? <Spinner /> : <BarcodeIcon />}
@@ -96,7 +96,7 @@ export function ScanInput({ onScan, isLoading }) {
               <button
                 onClick={submit}
                 disabled={value.replace(/\D/g, '').length < 10}
-                className="bg-amber-500 hover:bg-amber-600 disabled:bg-amber-200 text-white rounded-lg px-5 py-3 text-sm font-medium transition-colors"
+                className="btn-accent rounded-lg px-5 py-3 text-sm font-medium transition-colors"
               >
                 OK
               </button>
@@ -133,7 +133,7 @@ export function ScanInput({ onScan, isLoading }) {
         <button
           onClick={submit}
           disabled={value.replace(/\D/g, '').length < 10 || isLoading}
-          className="bg-amber-500 hover:bg-amber-600 disabled:bg-amber-200 text-white rounded-lg px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap"
+          className="btn-accent rounded-lg px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap"
         >
           Hinzufügen
         </button>

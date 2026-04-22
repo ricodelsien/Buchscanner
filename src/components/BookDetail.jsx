@@ -15,6 +15,7 @@ export function BookDetail({ book, onClose, onDelete, onUpdateCover, onUpdate, o
   const fileInputRef = useRef(null);
   const [notes, setNotes] = useState(book.notes ?? '');
   const [editingNotes, setEditingNotes] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => { setSrcIndex(0); }, [book.id, book.customCover]);
   useEffect(() => { setNotes(book.notes ?? ''); }, [book.id, book.notes]);
@@ -278,7 +279,7 @@ export function BookDetail({ book, onClose, onDelete, onUpdateCover, onUpdate, o
                 className="w-full text-sm border border-stone-300 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
               />
               <div className="flex gap-2 mt-2">
-                <button onClick={saveNotes} className="text-xs bg-amber-500 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-amber-600">Speichern</button>
+                <button onClick={saveNotes} className="text-xs btn-accent px-3 py-1.5 rounded-lg font-medium">Speichern</button>
                 <button onClick={() => { setNotes(book.notes ?? ''); setEditingNotes(false); }} className="text-xs text-stone-400 px-3 py-1.5 hover:text-stone-600">Abbrechen</button>
               </div>
             </div>
@@ -292,12 +293,26 @@ export function BookDetail({ book, onClose, onDelete, onUpdateCover, onUpdate, o
         {/* Footer */}
         <div className="px-5 py-4 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between">
           <p className="text-xs text-stone-400 dark:text-stone-500">Hinzugefügt {new Date(book.addedAt).toLocaleDateString('de-DE')}</p>
-          <button onClick={() => { onDelete(book.id); onClose(); }} className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 font-medium transition-colors">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-            Entfernen
-          </button>
+          {confirmDelete ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-stone-500 dark:text-stone-400">Wirklich löschen?</span>
+              <button
+                onClick={() => { onDelete(book.id); onClose(); }}
+                className="text-xs font-semibold text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+              >Ja</button>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="text-xs text-stone-400 hover:text-stone-600 transition-colors"
+              >Nein</button>
+            </div>
+          ) : (
+            <button onClick={() => setConfirmDelete(true)} className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 font-medium transition-colors">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Entfernen
+            </button>
+          )}
         </div>
       </div>
     </div>

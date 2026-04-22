@@ -81,6 +81,22 @@ export default function App() {
     setCreateISBN('');
   }, [addBook, showToast]);
 
+  const handleBatchDelete = useCallback((ids) => {
+    ids.forEach((id) => removeBook(id));
+    showToast(`${ids.length} ${ids.length === 1 ? 'Buch' : 'Bücher'} entfernt.`, 'info');
+  }, [removeBook, showToast]);
+
+  const handleBatchAddToShelf = useCallback((ids, shelfId) => {
+    ids.forEach((id) => {
+      const book = books.find((b) => b.id === id);
+      if (!book) return;
+      const cur = book.shelfIds ?? [];
+      if (!cur.includes(shelfId)) updateBook(id, { shelfIds: [...cur, shelfId] });
+    });
+    const shelf = shelves.find((s) => s.id === shelfId);
+    showToast(`${ids.length} Bücher zu "${shelf?.name ?? 'Regal'}" hinzugefügt.`, 'success');
+  }, [books, shelves, updateBook, showToast]);
+
   const handleEditSave = useCallback((data) => {
     if (!editBook) return;
     updateBook(editBook.id, data);
@@ -216,7 +232,15 @@ export default function App() {
 
       {/* Books — scrolls independently, everything else stays fixed */}
       <main className="flex-1 overflow-y-auto overscroll-contain max-w-7xl mx-auto w-full flex flex-col">
-        <BookGrid books={filteredBooks} shelves={shelves} onSelect={setSelected} viewMode={viewMode} />
+        <BookGrid
+          books={filteredBooks}
+          shelves={shelves}
+          onSelect={setSelected}
+          viewMode={viewMode}
+          onBatchDelete={handleBatchDelete}
+          onBatchAddToShelf={handleBatchAddToShelf}
+          onToggleFavorite={(id) => updateBook(id, { favorite: !books.find((b) => b.id === id)?.favorite })}
+        />
       </main>
 
       {/* Detail */}

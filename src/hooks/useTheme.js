@@ -7,45 +7,52 @@ export const THEMES = [
     id: 'bernstein',
     name: 'Bernstein',
     description: 'Warm & gemütlich',
-    light: { bg: '#fafaf9', surface: '#ffffff', surface2: '#f5f5f4' },
-    dark:  { bg: '#0c0a09', surface: '#1c1917', surface2: '#231f1d' },
-    swatch: ['#fafaf9', '#ffffff', '#f59e0b'],
+    light: { bg: '#fafaf9', surface: '#ffffff', surface2: '#f5f5f4', accent: '#d97706', accentHover: '#b45309', accentFg: '#ffffff' },
+    dark:  { bg: '#0c0a09', surface: '#1c1917', surface2: '#231f1d', accent: '#f59e0b', accentHover: '#d97706', accentFg: '#000000' },
+    swatch: { bg: '#fafaf9', surface: '#ffffff', accent: '#d97706' },
   },
   {
     id: 'schiefer',
     name: 'Schiefer',
     description: 'Kühl & modern',
-    light: { bg: '#f8fafc', surface: '#ffffff', surface2: '#f1f5f9' },
-    dark:  { bg: '#0f172a', surface: '#1e293b', surface2: '#263348' },
-    swatch: ['#f1f5f9', '#ffffff', '#6366f1'],
+    light: { bg: '#f1f5f9', surface: '#ffffff', surface2: '#e2e8f0', accent: '#4f46e5', accentHover: '#3730a3', accentFg: '#ffffff' },
+    dark:  { bg: '#0f172a', surface: '#1e293b', surface2: '#263348', accent: '#818cf8', accentHover: '#6366f1', accentFg: '#ffffff' },
+    swatch: { bg: '#f1f5f9', surface: '#ffffff', accent: '#4f46e5' },
   },
   {
     id: 'sepia',
     name: 'Sepia',
     description: 'Papier & Bücher',
-    light: { bg: '#fdf7ed', surface: '#fefcf5', surface2: '#f0e5cf' },
-    dark:  { bg: '#1a1410', surface: '#261e14', surface2: '#35291a' },
-    swatch: ['#fdf7ed', '#fefcf5', '#b45309'],
+    light: { bg: '#fdf7ed', surface: '#fefcf5', surface2: '#f0e5cf', accent: '#b45309', accentHover: '#92400e', accentFg: '#ffffff' },
+    dark:  { bg: '#1a1410', surface: '#26200e', surface2: '#352b14', accent: '#fb923c', accentHover: '#ea580c', accentFg: '#ffffff' },
+    swatch: { bg: '#fdf7ed', surface: '#fefcf5', accent: '#b45309' },
   },
   {
     id: 'nacht',
     name: 'Nacht',
     description: 'Tiefes Schwarz',
-    light: { bg: '#fafaf9', surface: '#ffffff', surface2: '#f5f5f4' },
-    dark:  { bg: '#020202', surface: '#0e0e0d', surface2: '#1a1a19' },
-    swatch: ['#111110', '#0e0e0d', '#f59e0b'],
+    light: { bg: '#f9fafb', surface: '#ffffff', surface2: '#f3f4f6', accent: '#6d28d9', accentHover: '#5b21b6', accentFg: '#ffffff' },
+    dark:  { bg: '#050505', surface: '#111110', surface2: '#1c1c1a', accent: '#a78bfa', accentHover: '#8b5cf6', accentFg: '#ffffff' },
+    swatch: { bg: '#111110', surface: '#1c1c1a', accent: '#a78bfa' },
   },
 ];
 
+export function getTheme(id) {
+  return THEMES.find((t) => t.id === id) ?? THEMES[0];
+}
+
 function applyTheme(themeId) {
-  const theme = THEMES.find((t) => t.id === themeId) ?? THEMES[0];
+  const theme = getTheme(themeId);
   const isDark = document.documentElement.classList.contains('dark');
   const colors = isDark ? theme.dark : theme.light;
-  const root = document.documentElement;
-  root.setAttribute('data-theme', themeId);
-  root.style.setProperty('--theme-bg', colors.bg);
-  root.style.setProperty('--theme-surface', colors.surface);
-  root.style.setProperty('--theme-surface-2', colors.surface2);
+  const el = document.documentElement;
+  el.setAttribute('data-theme', themeId);
+  el.style.setProperty('--theme-bg', colors.bg);
+  el.style.setProperty('--theme-surface', colors.surface);
+  el.style.setProperty('--theme-surface-2', colors.surface2);
+  el.style.setProperty('--accent', colors.accent);
+  el.style.setProperty('--accent-hover', colors.accentHover);
+  el.style.setProperty('--accent-fg', colors.accentFg);
 }
 
 export function useTheme() {
@@ -56,10 +63,8 @@ export function useTheme() {
     localStorage.setItem(KEY, id);
   };
 
-  // Re-apply whenever theme or dark mode changes
   useEffect(() => {
     applyTheme(theme);
-    // Watch for dark class changes (toggled independently)
     const observer = new MutationObserver(() => applyTheme(theme));
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     return () => observer.disconnect();
