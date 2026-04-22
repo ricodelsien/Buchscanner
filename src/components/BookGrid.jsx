@@ -9,20 +9,19 @@ import { SpineView } from './SpineView';
 /* ── Column count per viewMode + container width ──────────────────────────── */
 function calcCols(width, mode) {
   if (mode === 'compact') {
-    if (width < 480) return 3;
-    if (width < 640) return 4;
-    if (width < 900) return 5;
-    return 6;
+    // min 6 always
+    if (width < 640) return 6;
+    if (width < 900) return 7;
+    return 8;
   }
-  // grid
-  if (width < 480) return 2;
-  if (width < 640) return 3;
-  if (width < 900) return 4;
-  return 5;
+  // grid — min 4 always
+  if (width < 640) return 4;
+  if (width < 900) return 5;
+  return 6;
 }
 
 function useContainerCols(ref, viewMode) {
-  const [cols, setCols] = useState(viewMode === 'compact' ? 3 : 2);
+  const [cols, setCols] = useState(viewMode === 'compact' ? 6 : 4);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -68,8 +67,8 @@ function ShelfGrid({ books, cols, gap, viewMode, ...cardProps }) {
 
   const colClass = {
     2: 'grid-cols-2', 3: 'grid-cols-3', 4: 'grid-cols-4',
-    5: 'grid-cols-5', 6: 'grid-cols-6',
-  }[cols] ?? 'grid-cols-2';
+    5: 'grid-cols-5', 6: 'grid-cols-6', 7: 'grid-cols-7', 8: 'grid-cols-8',
+  }[cols] ?? 'grid-cols-4';
 
   return (
     <div>
