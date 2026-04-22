@@ -47,7 +47,7 @@ export default function App() {
   const { shelves, addShelf, updateShelf, removeShelf, findOrCreate }         = useShelves();
   const { profile, saveProfile, hasProfile }                                  = useProfile();
   const { dark, toggle: toggleDark }                                          = useDarkMode();
-  const { theme, setTheme }                                                   = useTheme();
+  const { theme, setTheme, accent, setAccent }                               = useTheme();
 
   const [selected,        setSelected]        = useState(null);
   const [toasts,          setToasts]          = useState([]);
@@ -245,6 +245,8 @@ export default function App() {
             onToggleDark={toggleDark}
             theme={theme}
             onSetTheme={setTheme}
+            accent={accent}
+            onSetAccent={setAccent}
           />
         )}
 
