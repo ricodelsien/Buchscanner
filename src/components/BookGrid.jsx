@@ -16,7 +16,6 @@ function calcCols(width, mode) {
     return 8;
   }
   // grid
-  if (width < 360) return 2;
   if (width < 490) return 3;
   if (width < 680) return 4;
   if (width < 920) return 5;

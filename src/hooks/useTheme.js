@@ -6,18 +6,16 @@ export const THEMES = [
   {
     id: 'standard',
     name: 'Standard',
-    description: 'Klares Tageslicht — immer hell',
-    forcedLight: true,
+    description: 'Klassisch & klar',
     light: {
       bg: '#f5f4f0', surface: '#ffffff', surface2: '#edeae3',
       accent: '#1d4ed8', accentHover: '#1e40af', accentFg: '#ffffff',
       shelfTop: '#d4a853', shelfFace: '#b8893a', shelfShadow: 'rgba(0,0,0,0.28)',
     },
-    // Same as light — forcedLight ignores dark mode
     dark: {
-      bg: '#f5f4f0', surface: '#ffffff', surface2: '#edeae3',
-      accent: '#1d4ed8', accentHover: '#1e40af', accentFg: '#ffffff',
-      shelfTop: '#d4a853', shelfFace: '#b8893a', shelfShadow: 'rgba(0,0,0,0.28)',
+      bg: '#1c1b18', surface: '#252420', surface2: '#2e2c27',
+      accent: '#6ba3f0', accentHover: '#4d8ee0', accentFg: '#0a1628',
+      shelfTop: '#3d2d10', shelfFace: '#2a1e09', shelfShadow: 'rgba(0,0,0,0.65)',
     },
     swatch: { bg: '#f5f4f0', surface: '#ffffff', accent: '#1d4ed8' },
   },
@@ -91,9 +89,9 @@ export function getTheme(id) {
   return THEMES.find((t) => t.id === id) ?? THEMES[0];
 }
 
-function applyTheme(themeId, forcedLight = false) {
+function applyTheme(themeId) {
   const theme = getTheme(themeId);
-  const isDark = !forcedLight && document.documentElement.classList.contains('dark');
+  const isDark = document.documentElement.classList.contains('dark');
   const colors = isDark ? theme.dark : theme.light;
   const el = document.documentElement;
   el.setAttribute('data-theme', themeId);
@@ -117,25 +115,8 @@ export function useTheme() {
   };
 
   useEffect(() => {
-    const t = getTheme(theme);
-
-    if (t.forcedLight) {
-      // Remove dark class and keep it removed as long as this theme is active
-      document.documentElement.classList.remove('dark');
-      applyTheme(theme, true);
-
-      const observer = new MutationObserver(() => {
-        if (document.documentElement.classList.contains('dark')) {
-          document.documentElement.classList.remove('dark');
-        }
-        applyTheme(theme, true);
-      });
-      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-      return () => observer.disconnect();
-    }
-
-    applyTheme(theme, false);
-    const observer = new MutationObserver(() => applyTheme(theme, false));
+    applyTheme(theme);
+    const observer = new MutationObserver(() => applyTheme(theme));
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     return () => observer.disconnect();
   }, [theme]);

@@ -1,128 +1,98 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 
-// ── Constants ──────────────────────────────────────────────────────────────────
-const SPINE_HEIGHT = 188;   // px — vertical book height
-const LYING_H      = 34;    // px — lying book height
-const DIVIDER_W    = 13;    // px — shelf divider width
-const GAP          = 3;     // px — gap between elements
-const LYING_MIN_W  = 55;    // px — min width for a lying book filler
-const LYING_MAX_W  = 110;   // px — max width for a lying book filler
-const PAD_H        = 32;    // px — left+right padding of container
+// ── Curated deep-tone spine color palette ──────────────────────────────────────
+const SPINE_PALETTE = [
+  '#7B1D1D', '#991B1B', '#9F1239', '#881337',
+  '#1B4332', '#1B5E3C', '#14532D', '#065F46',
+  '#1A3A5C', '#1E3A8A', '#1E40AF', '#164E63',
+  '#3B0764', '#4C1D95', '#581C87', '#6B21A8',
+  '#451A03', '#7C2D12', '#78350F', '#92400E',
+  '#1C1917', '#374151', '#1F2937', '#111827',
+  '#134E4A', '#0F3460', '#3D1A78', '#701A75',
+];
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Height & width variants ────────────────────────────────────────────────────
+const HEIGHTS = [148, 165, 180, 196];  // 4 levels
+const WIDTHS  = [24,  32,  42,  54];   // 4 levels
 
-/** Deterministic color from a book's identity */
+const GAP   = 2;   // px between spines
+const PAD_H = 32;  // container left+right padding
+
+// ── Deterministic hash from a string ──────────────────────────────────────────
+function djb2(s) {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h) ^ s.charCodeAt(i);
+  return h >>> 0; // unsigned
+}
+
+function bookHash(book) {
+  return djb2(book.id ?? book.isbn ?? book.title ?? String(Math.random()));
+}
+
 function spineColor(book) {
-  let h = 0;
-  const s = book.id || book.isbn || book.title || '';
-  for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
-  const hue = Math.abs(h) % 360;
-  const sat = 32 + (Math.abs(h >> 4) % 28);
-  const lit = 27 + (Math.abs(h >> 8) % 18);
-  return `hsl(${hue},${sat}%,${lit}%)`;
+  return SPINE_PALETTE[bookHash(book) % SPINE_PALETTE.length];
 }
 
-/** Width variant: 34 / 44 / 56 px */
+function spineHeight(book) {
+  return HEIGHTS[(bookHash(book) >> 3) % HEIGHTS.length];
+}
+
 function spineWidth(book) {
-  let h = 0;
-  const s = book.id || book.title || '';
-  for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
-  return [34, 44, 56][Math.abs(h >> 2) % 3];
+  return WIDTHS[(bookHash(book) >> 6) % WIDTHS.length];
 }
 
-/** Seeded pseudo-RNG (Park-Miller) */
-function makeRng(seed) {
-  let s = Math.max(1, Math.abs(seed) % 2147483646);
-  return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
+// ── Slightly lighter/darker tint for 3-D edge effects ─────────────────────────
+function lighten(hex, amount = 40) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = Math.min(255, (n >> 16) + amount);
+  const g = Math.min(255, ((n >> 8) & 0xff) + amount);
+  const b = Math.min(255, (n & 0xff) + amount);
+  return `rgb(${r},${g},${b})`;
+}
+function darken(hex, amount = 30) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = Math.max(0, (n >> 16) - amount);
+  const g = Math.max(0, ((n >> 8) & 0xff) - amount);
+  const b = Math.max(0, (n & 0xff) - amount);
+  return `rgb(${r},${g},${b})`;
 }
 
-/**
- * Builds shelf rows from the book list.
- * Each row is an array of elements:
- *   { type: 'spine',   book, id }
- *   { type: 'divider', id }
- *   { type: 'lying',   book, width, id }
- */
-function buildShelfRows(books, containerWidth) {
+// ── Build shelf rows ───────────────────────────────────────────────────────────
+function buildRows(books, containerWidth) {
   const usable = Math.max(200, containerWidth - PAD_H);
-  const rng = makeRng(books.length * 31 + Math.round(containerWidth));
-
   const rows = [];
   let row = [];
-  let rowW = 0;           // current cumulative width (incl. gaps)
-  let spinesSinceDivider = 0;
-  let nextDivider = 3 + Math.floor(rng() * 4); // insert divider after 3–6 spines
+  let rowW = 0;
 
-  const flushRow = (lyingBook = null, lyingW = 0) => {
-    if (lyingBook) {
-      row.push({ type: 'lying', book: lyingBook, width: lyingW, id: `lying-${rows.length}` });
-    }
-    rows.push(row);
-    row = [];
-    rowW = 0;
-    spinesSinceDivider = 0;
-    nextDivider = 3 + Math.floor(rng() * 4);
-  };
-
-  const tryLying = (rowIdx) => {
-    const remaining = usable - rowW - GAP;
-    if (remaining >= LYING_MIN_W) {
-      const lyingW = Math.min(remaining, LYING_MAX_W);
-      const idx = Math.floor(rng() * books.length);
-      return { book: books[idx], width: lyingW };
-    }
-    return null;
-  };
-
-  for (let i = 0; i < books.length; i++) {
-    const book = books[i];
+  for (const book of books) {
     const w = spineWidth(book);
-    const neededForSpine = rowW === 0 ? w : GAP + w;
-
-    // Would this spine overflow the row?
-    if (row.length > 0 && rowW + neededForSpine > usable) {
-      const lying = tryLying(rows.length);
-      flushRow(lying?.book, lying?.width);
-      // Start fresh row with this spine
-      row.push({ type: 'spine', book, id: book.id });
+    const needed = row.length === 0 ? w : GAP + w;
+    if (row.length > 0 && rowW + needed > usable) {
+      rows.push(row);
+      row = [book];
       rowW = w;
-      spinesSinceDivider = 1;
-      continue;
+    } else {
+      row.push(book);
+      rowW += needed;
     }
-
-    // Insert a divider if it's time and there's room for divider + this spine
-    if (spinesSinceDivider >= nextDivider && row.length > 0) {
-      const neededWithDiv = GAP + DIVIDER_W + GAP + w;
-      if (rowW + neededWithDiv <= usable) {
-        row.push({ type: 'divider', id: `div-${i}-${rows.length}` });
-        rowW += GAP + DIVIDER_W;
-        spinesSinceDivider = 0;
-        nextDivider = 3 + Math.floor(rng() * 4);
-      }
-    }
-
-    // Add spine
-    const addW = rowW === 0 ? w : GAP + w;
-    row.push({ type: 'spine', book, id: book.id });
-    rowW += addW;
-    spinesSinceDivider++;
   }
-
-  // Flush last row
-  if (row.length > 0) {
-    const lying = tryLying(rows.length);
-    flushRow(lying?.book, lying?.width);
-  }
-
+  if (row.length > 0) rows.push(row);
   return rows;
 }
 
-// ── Components ────────────────────────────────────────────────────────────────
+// ── Status dot colors ──────────────────────────────────────────────────────────
+const STATUS_COLORS = {
+  want: '#60a5fa', reading: '#fbbf24', read: '#4ade80', dropped: '#a8a29e',
+};
 
+// ── SpineBook ─────────────────────────────────────────────────────────────────
 function SpineBook({ book, isJumping, onClick }) {
-  const color = spineColor(book);
-  const width = spineWidth(book);
-  const fontSize = width <= 36 ? '0.58rem' : width <= 44 ? '0.63rem' : '0.68rem';
+  const color  = spineColor(book);
+  const width  = spineWidth(book);
+  const height = spineHeight(book);
+  const fontSize = width <= 26 ? '0.52rem' : width <= 36 ? '0.58rem' : width <= 44 ? '0.64rem' : '0.7rem';
+  const leftEdge  = lighten(color, 55);
+  const rightEdge = darken(color, 35);
 
   return (
     <button
@@ -130,130 +100,80 @@ function SpineBook({ book, isJumping, onClick }) {
       onClick={() => onClick(book)}
       title={`${book.title}${book.authors?.length ? ' — ' + book.authors[0] : ''}`}
       className={`book-spine${isJumping ? ' spine-jump' : ''}`}
-      style={{ width, height: SPINE_HEIGHT, backgroundColor: color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+      style={{
+        width,
+        height,
+        flexShrink: 0,
+        position: 'relative',
+        background: `linear-gradient(
+          to right,
+          ${leftEdge} 0%,
+          ${color} 12%,
+          ${color} 82%,
+          ${darken(color, 18)} 90%,
+          ${rightEdge} 100%
+        )`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: '2px 2px 0 0',
+      }}
     >
+      {/* Page-stack right edge */}
+      <div style={{
+        position: 'absolute', top: 0, right: 0, bottom: 0, width: 5,
+        background: 'repeating-linear-gradient(to bottom, rgba(255,255,255,0.07) 0px, rgba(255,255,255,0.07) 1px, rgba(0,0,0,0.06) 1px, rgba(0,0,0,0.06) 2px)',
+        borderLeft: `1px solid ${darken(color, 50)}`,
+        pointerEvents: 'none',
+      }} />
+
+      {/* Top highlight */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+        background: 'rgba(255,255,255,0.28)',
+        borderRadius: '2px 2px 0 0',
+        pointerEvents: 'none',
+      }} />
+
+      {/* Title text */}
       <span style={{
         writingMode: 'vertical-rl',
         textOrientation: 'mixed',
         transform: 'rotate(180deg)',
-        color: 'rgba(255,255,255,0.92)',
+        color: 'rgba(255,255,255,0.95)',
         fontSize,
-        fontWeight: 700,
-        letterSpacing: '0.03em',
-        lineHeight: 1.2,
-        textShadow: '0 1px 4px rgba(0,0,0,0.45)',
-        maxHeight: SPINE_HEIGHT - 20,
+        fontWeight: 600,
+        letterSpacing: '0.02em',
+        lineHeight: 1.15,
+        textShadow: '0 1px 6px rgba(0,0,0,0.6)',
+        maxHeight: height - 24,
         overflow: 'hidden',
-        WebkitLineClamp: 1,
         display: '-webkit-box',
+        WebkitLineClamp: 1,
         WebkitBoxOrient: 'vertical',
-        padding: '0 3px',
+        padding: '0 2px',
         userSelect: 'none',
+        flex: 1,
+        textAlign: 'center',
       }}>
         {book.title}
       </span>
 
-      {book.status && <StatusDot status={book.status} />}
+      {/* Status dot */}
+      {book.status && (
+        <div style={{
+          position: 'absolute', bottom: 5, left: '50%', transform: 'translateX(-50%)',
+          width: 5, height: 5, borderRadius: '50%',
+          backgroundColor: STATUS_COLORS[book.status] ?? '#888',
+          boxShadow: '0 0 3px rgba(0,0,0,0.5)',
+          flexShrink: 0,
+        }} />
+      )}
     </button>
-  );
-}
-
-function ShelfDivider() {
-  return (
-    <div
-      aria-hidden
-      style={{
-        width: DIVIDER_W,
-        height: SPINE_HEIGHT,
-        flexShrink: 0,
-        borderRadius: '2px 2px 0 0',
-        background: `linear-gradient(
-          to right,
-          color-mix(in srgb, var(--shelf-face) 75%, black 25%) 0%,
-          var(--shelf-top) 25%,
-          color-mix(in srgb, var(--shelf-top) 85%, white 15%) 50%,
-          var(--shelf-top) 75%,
-          color-mix(in srgb, var(--shelf-face) 75%, black 25%) 100%
-        )`,
-        boxShadow: '2px 0 8px rgba(0,0,0,0.3), -2px 0 8px rgba(0,0,0,0.15)',
-      }}
-    />
-  );
-}
-
-function LyingBook({ book, width, onClick }) {
-  const color = spineColor(book);
-  const [hovered, setHovered] = useState(false);
-
-  return (
-    <button
-      data-book-id={book.id}
-      onClick={() => onClick(book)}
-      title={`${book.title} (liegend)`}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        width,
-        height: LYING_H,
-        flexShrink: 0,
-        backgroundColor: color,
-        borderRadius: '2px 2px 0 0',
-        display: 'flex',
-        alignItems: 'center',
-        paddingLeft: 8,
-        paddingRight: 8,
-        overflow: 'hidden',
-        position: 'relative',
-        cursor: 'pointer',
-        transition: 'filter 0.15s ease, transform 0.15s ease',
-        filter: hovered ? 'brightness(1.2)' : 'brightness(1)',
-        transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
-      }}
-    >
-      {/* Page stack effect on the right */}
-      <div style={{
-        position: 'absolute', top: 0, right: 0, bottom: 0, width: 8,
-        background: 'repeating-linear-gradient(to bottom, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 1px, transparent 1px, transparent 3px)',
-        borderLeft: '1px solid rgba(0,0,0,0.15)',
-      }} />
-      {/* Top highlight */}
-      <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, height: 3,
-        background: 'rgba(255,255,255,0.2)',
-        borderRadius: '2px 2px 0 0',
-      }} />
-      <span style={{
-        fontSize: '0.6rem',
-        fontWeight: 700,
-        color: 'rgba(255,255,255,0.9)',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        whiteSpace: 'nowrap',
-        textShadow: '0 1px 3px rgba(0,0,0,0.4)',
-        userSelect: 'none',
-        maxWidth: width - 24,
-      }}>
-        {book.title}
-      </span>
-    </button>
-  );
-}
-
-const STATUS_COLORS = { want: '#60a5fa', reading: '#fbbf24', read: '#4ade80', dropped: '#a8a29e' };
-
-function StatusDot({ status }) {
-  return (
-    <div style={{
-      position: 'absolute', bottom: 6, left: '50%', transform: 'translateX(-50%)',
-      width: 6, height: 6, borderRadius: '50%',
-      backgroundColor: STATUS_COLORS[status] ?? '#888',
-      boxShadow: '0 0 4px rgba(0,0,0,0.4)',
-    }} />
   );
 }
 
 // ── Main export ───────────────────────────────────────────────────────────────
-
 export function SpineView({ books, onSelect }) {
   const containerRef = useRef(null);
   const [containerWidth, setContainerWidth] = useState(600);
@@ -273,56 +193,42 @@ export function SpineView({ books, onSelect }) {
     setTimeout(() => { setJumpingId(null); onSelect(book); }, 260);
   }, [onSelect]);
 
-  const rows = buildShelfRows(books, containerWidth);
+  const rows = buildRows(books, containerWidth);
 
   if (books.length === 0) return null;
 
   return (
-    <div ref={containerRef} className="w-full pb-4">
-      {rows.map((row, rowIdx) => (
-        <div key={rowIdx}>
-          {/* Row of elements — align to bottom so lying books sit on the shelf */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'flex-end',
-              gap: GAP,
-              padding: `16px 16px 0`,
-            }}
-          >
-            {row.map((el) => {
-              if (el.type === 'spine') {
-                return (
-                  <SpineBook
-                    key={el.id}
-                    book={el.book}
-                    isJumping={jumpingId === el.book.id}
-                    onClick={handleClick}
-                  />
-                );
-              }
-              if (el.type === 'divider') {
-                return <ShelfDivider key={el.id} />;
-              }
-              if (el.type === 'lying') {
-                return (
-                  <LyingBook
-                    key={el.id}
-                    book={el.book}
-                    width={el.width}
-                    onClick={handleClick}
-                  />
-                );
-              }
-              return null;
-            })}
+    <div ref={containerRef} className="w-full pb-8">
+      {rows.map((row, rowIdx) => {
+        const rowHeight = Math.max(...row.map(spineHeight));
+        return (
+          <div key={rowIdx} className="mb-0">
+            {/* Books row — aligned to bottom */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'flex-end',
+                gap: GAP,
+                padding: `20px 16px 0`,
+                minHeight: rowHeight + 20,
+              }}
+            >
+              {row.map((book) => (
+                <SpineBook
+                  key={book.id}
+                  book={book}
+                  isJumping={jumpingId === book.id}
+                  onClick={handleClick}
+                />
+              ))}
+            </div>
+            {/* Shelf bar */}
+            <div style={{ padding: '0 16px' }}>
+              <div className="shelf-bar" />
+            </div>
           </div>
-          {/* Shelf bar below each row */}
-          <div className="mx-4">
-            <div className="shelf-bar" />
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

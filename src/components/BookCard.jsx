@@ -34,8 +34,19 @@ export function BookCard({
   const pressFired    = useRef(false);
   const pressStartPos = useRef(null);
   const lastTap       = useRef(0);
+  const shineRef      = useRef(null);
 
   const cancelPress = useCallback(() => clearTimeout(pressTimer.current), []);
+
+  const handleMouseMove = useCallback((e) => {
+    const el = shineRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = (((e.clientX - rect.left) / rect.width) * 100).toFixed(1);
+    const y = (((e.clientY - rect.top) / rect.height) * 100).toFixed(1);
+    el.style.setProperty('--sx', `${x}%`);
+    el.style.setProperty('--sy', `${y}%`);
+  }, []);
 
   const onPointerDown = useCallback((e) => {
     pressFired.current = false;
@@ -91,7 +102,11 @@ export function BookCard({
         className="relative w-full theme-surface shadow-sm dark:shadow-stone-950/50 rounded-xl overflow-hidden"
         style={{ paddingTop: '150%' }}
       >
-        <div className="absolute inset-0">
+        <div
+          ref={shineRef}
+          className="absolute inset-0"
+          onMouseMove={handleMouseMove}
+        >
 
           {!failed && sources[srcIndex] ? (
             <img
@@ -179,6 +194,14 @@ export function BookCard({
               title={STATUS_LABELS[book.status]}
             />
           )}
+
+          {/* Glanzeffekt (Desktop hover) */}
+          <div
+            className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 hidden sm:block rounded-xl"
+            style={{
+              background: 'radial-gradient(ellipse 60% 40% at var(--sx,50%) var(--sy,30%), rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 50%, transparent 70%)',
+            }}
+          />
         </div>
       </div>
 
