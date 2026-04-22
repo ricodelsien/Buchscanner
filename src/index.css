@@ -32,12 +32,15 @@
 
 /* ── Theme CSS variables ─────────────────────────────────────────────────── */
 :root {
-  --theme-bg:        #fafaf9;
+  --theme-bg:        #f5f4f0;
   --theme-surface:   #ffffff;
-  --theme-surface-2: #f5f5f4;
-  --accent:          #d97706;
-  --accent-hover:    #b45309;
+  --theme-surface-2: #edeae3;
+  --accent:          #1d4ed8;
+  --accent-hover:    #1e40af;
   --accent-fg:       #ffffff;
+  --shelf-top:       #d4a853;
+  --shelf-face:      #b8893a;
+  --shelf-shadow:    rgba(0,0,0,0.28);
 }
 
 /* ── Theme-aware utility classes ─────────────────────────────────────────── */
@@ -46,7 +49,6 @@
   .theme-surface   { background-color: var(--theme-surface); }
   .theme-surface-2 { background-color: var(--theme-surface-2); }
 
-  /* Primary accent button — replaces all bg-amber-500 hover:bg-amber-600 */
   .btn-accent {
     background-color: var(--accent);
     color: var(--accent-fg);
@@ -60,18 +62,16 @@
     cursor: not-allowed;
   }
 
-  /* Tinted accent for subtle backgrounds (chips, tags) */
   .accent-subtle {
     background-color: color-mix(in srgb, var(--accent) 12%, transparent);
     color: var(--accent);
     border-color: color-mix(in srgb, var(--accent) 35%, transparent);
   }
 
-  /* Focus ring using accent */
   .ring-accent { --tw-ring-color: var(--accent); }
 }
 
-/* Make dark-mode inputs follow the surface theme color */
+/* ── Dark-mode inputs ────────────────────────────────────────────────────── */
 @layer base {
   .dark input[type="text"],
   .dark input[type="number"],
@@ -89,7 +89,14 @@
   }
 }
 
+/* ── Text truncation ─────────────────────────────────────────────────────── */
 @layer utilities {
+  .line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -102,4 +109,109 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+  .line-clamp-4 {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+/* ── Custom scrollbar ────────────────────────────────────────────────────── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--accent) 45%, transparent) transparent;
+}
+*::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 2px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* Hide scrollbar for chip rows */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Shelf bar ───────────────────────────────────────────────────────────── */
+.shelf-bar {
+  width: 100%;
+  height: 22px;
+  flex-shrink: 0;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--shelf-top) 90%, white 10%) 0%,
+    var(--shelf-top) 40%,
+    var(--shelf-face) 40%,
+    color-mix(in srgb, var(--shelf-face) 85%, black 15%) 100%
+  );
+  box-shadow: 0 4px 18px var(--shelf-shadow), 0 1px 0 color-mix(in srgb, var(--shelf-top) 60%, white 40%) inset;
+  position: relative;
+}
+/* Top highlight line */
+.shelf-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: color-mix(in srgb, var(--shelf-top) 40%, white 60%);
+  opacity: 0.6;
+  border-radius: 1px 1px 0 0;
+}
+
+/* ── Book spine view ─────────────────────────────────────────────────────── */
+.book-spine {
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+  border-radius: 2px 3px 0 0;
+  position: relative;
+  flex-shrink: 0;
+}
+@media (hover: hover) {
+  .book-spine:hover {
+    transform: translateY(-10px);
+    filter: brightness(1.18);
+    box-shadow: 4px 0 16px rgba(0,0,0,0.4), -1px 0 4px rgba(0,0,0,0.15);
+  }
+}
+.book-spine.spine-jump {
+  transform: translateY(-22px) !important;
+  filter: brightness(1.25) !important;
+  box-shadow: 4px 0 24px rgba(0,0,0,0.5), -1px 0 6px rgba(0,0,0,0.2) !important;
+  z-index: 10;
+}
+/* Spine edge highlight */
+.book-spine::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(to right, rgba(255,255,255,0.25), transparent);
+  border-radius: 2px 0 0 0;
+  pointer-events: none;
+}
+
+/* Spine grid container */
+.spine-shelf-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 2px;
+  padding: 0 16px;
 }

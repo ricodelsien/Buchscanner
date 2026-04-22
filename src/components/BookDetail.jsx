@@ -16,6 +16,7 @@ export function BookDetail({ book, onClose, onDelete, onUpdateCover, onUpdate, o
   const [notes, setNotes] = useState(book.notes ?? '');
   const [editingNotes, setEditingNotes] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [descExpanded, setDescExpanded] = useState(false);
 
   useEffect(() => { setSrcIndex(0); }, [book.id, book.customCover]);
   useEffect(() => { setNotes(book.notes ?? ''); }, [book.id, book.notes]);
@@ -217,14 +218,28 @@ export function BookDetail({ book, onClose, onDelete, onUpdateCover, onUpdate, o
         </div>
 
         {/* Klappentext */}
-        {book.description && (
-          <div className="px-5 pb-3">
-            <p className="text-xs font-semibold text-stone-400 dark:text-stone-500 uppercase tracking-wider mb-1.5">Klappentext</p>
-            <p className="text-sm text-stone-600 dark:text-stone-300 leading-relaxed line-clamp-3">
-              {book.description.replace(/<[^>]+>/g, '')}
-            </p>
-          </div>
-        )}
+        {book.description && (() => {
+          const text = book.description.replace(/<[^>]+>/g, '');
+          const isLong = text.length > 280;
+          return (
+            <div className="px-5 pb-3">
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-xs font-semibold text-stone-400 dark:text-stone-500 uppercase tracking-wider">Klappentext</p>
+                {isLong && (
+                  <button
+                    onClick={() => setDescExpanded((v) => !v)}
+                    className="text-xs text-[var(--accent)] hover:underline"
+                  >
+                    {descExpanded ? 'Weniger' : 'Mehr'}
+                  </button>
+                )}
+              </div>
+              <p className={`text-sm text-stone-600 dark:text-stone-300 leading-relaxed ${isLong && !descExpanded ? 'line-clamp-4' : ''}`}>
+                {text}
+              </p>
+            </div>
+          );
+        })()}
 
         {/* Regale */}
         {shelves.length > 0 && (

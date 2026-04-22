@@ -1,31 +1,51 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { SortableContext, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { BookCard } from './BookCard';
 import { BookListRow } from './BookListRow';
 import { SelectionToolbar } from './SelectionToolbar';
+import { SpineView } from './SpineView';
 
-const GRID_COLS = {
-  grid:    'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5',
-  compact: 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6',
-};
+/* ── Column count per viewMode + container width ──────────────────────────── */
+function calcCols(width, mode) {
+  if (mode === 'compact') {
+    if (width < 480) return 3;
+    if (width < 640) return 4;
+    if (width < 900) return 5;
+    return 6;
+  }
+  // grid
+  if (width < 480) return 2;
+  if (width < 640) return 3;
+  if (width < 900) return 4;
+  return 5;
+}
 
-/** Sortable wrapper around BookCard */
+function useContainerCols(ref, viewMode) {
+  const [cols, setCols] = useState(viewMode === 'compact' ? 3 : 2);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new ResizeObserver(([entry]) => setCols(calcCols(entry.contentRect.width, viewMode)));
+    obs.observe(el);
+    setCols(calcCols(el.offsetWidth, viewMode));
+    return () => obs.disconnect();
+  }, [ref, viewMode]);
+  return cols;
+}
+
+/* ── Shelf bar ────────────────────────────────────────────────────────────── */
+function ShelfBar() {
+  return <div className="shelf-bar" />;
+}
+
+/* ── Sortable book card wrapper ───────────────────────────────────────────── */
 function SortableBookCard({ book, selectMode, ...props }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: book.id, disabled: selectMode });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: book.id,
+    disabled: selectMode,
+  });
+  const style = { transform: CSS.Transform.toString(transform), transition };
   return (
     <div ref={setNodeRef} style={style}>
       <BookCard
@@ -39,7 +59,50 @@ function SortableBookCard({ book, selectMode, ...props }) {
   );
 }
 
-export function BookGrid({ books, shelves = [], onSelect, viewMode = 'grid', onBatchDelete, onBatchAddToShelf, onToggleFavorite, activeDragId }) {
+/* ── ShelfGrid: groups books into rows, inserts ShelfBar between ──────────── */
+function ShelfGrid({ books, cols, gap, viewMode, ...cardProps }) {
+  const rows = [];
+  for (let i = 0; i < books.length; i += cols) {
+    rows.push(books.slice(i, i + cols));
+  }
+
+  const colClass = {
+    2: 'grid-cols-2', 3: 'grid-cols-3', 4: 'grid-cols-4',
+    5: 'grid-cols-5', 6: 'grid-cols-6',
+  }[cols] ?? 'grid-cols-2';
+
+  return (
+    <div>
+      {rows.map((row, i) => (
+        <div key={i}>
+          <div className={`grid ${colClass} gap-3 px-4 pt-4`}>
+            {row.map((book) => (
+              <SortableBookCard
+                key={book.id}
+                book={book}
+                compact={viewMode === 'compact'}
+                {...cardProps}
+              />
+            ))}
+            {/* Empty slots to keep shelf width consistent */}
+            {Array.from({ length: cols - row.length }).map((_, j) => (
+              <div key={`empty-${j}`} />
+            ))}
+          </div>
+          <div className="px-4 mt-3">
+            <ShelfBar />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ── Main BookGrid ────────────────────────────────────────────────────────── */
+export function BookGrid({
+  books, shelves = [], onSelect, viewMode = 'grid',
+  onBatchDelete, onBatchAddToShelf, onToggleFavorite, activeDragId,
+}) {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [band, setBand] = useState(null);
@@ -47,6 +110,8 @@ export function BookGrid({ books, shelves = [], onSelect, viewMode = 'grid', onB
   const gridRef = useRef(null);
   const dragRef = useRef(null);
   const initialSelRef = useRef(new Set());
+
+  const cols = useContainerCols(gridRef, viewMode);
 
   const enterSelectMode = useCallback((bookId) => {
     setSelectMode(true);
@@ -62,13 +127,11 @@ export function BookGrid({ books, shelves = [], onSelect, viewMode = 'grid', onB
   const toggleBook = useCallback((bookId) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(bookId)) next.delete(bookId);
-      else next.add(bookId);
+      next.has(bookId) ? next.delete(bookId) : next.add(bookId);
       return next;
     });
   }, []);
 
-  // Rubber-band: compute which cards intersect the band rect
   const selectInBand = useCallback((band) => {
     const container = gridRef.current;
     if (!container) return;
@@ -78,10 +141,8 @@ export function BookGrid({ books, shelves = [], onSelect, viewMode = 'grid', onB
     const next = new Set(initialSelRef.current);
     for (const card of cards) {
       const r = card.getBoundingClientRect();
-      const cx1 = r.left - cr.left;
-      const cy1 = r.top - cr.top + scrollTop;
-      const cx2 = cx1 + r.width;
-      const cy2 = cy1 + r.height;
+      const cx1 = r.left - cr.left, cy1 = r.top - cr.top + scrollTop;
+      const cx2 = cx1 + r.width,    cy2 = cy1 + r.height;
       if (cx2 > band.sx && cx1 < band.ex && cy2 > band.sy && cy1 < band.ey) {
         next.add(card.dataset.bookId);
       }
@@ -89,7 +150,6 @@ export function BookGrid({ books, shelves = [], onSelect, viewMode = 'grid', onB
     setSelectedIds(next);
   }, []);
 
-  // Start rubber-band on empty grid area (desktop)
   const handleMouseDown = useCallback((e) => {
     if (!selectMode || e.button !== 0) return;
     if (e.target.closest('[data-book-id]')) return;
@@ -115,33 +175,26 @@ export function BookGrid({ books, shelves = [], onSelect, viewMode = 'grid', onB
       setBand(rect);
       selectInBand(rect);
     };
-
     const onUp = () => {
       dragRef.current = null;
       setBand(null);
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
     };
-
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
   }, [selectMode, selectedIds, selectInBand]);
 
-  // Touch-drag selection (mobile: drag over cards to select)
   const handleTouchMove = useCallback((e) => {
     if (!selectMode) return;
     const touch = e.touches[0];
     const el = document.elementFromPoint(touch.clientX, touch.clientY);
     const card = el?.closest('[data-book-id]');
     if (card?.dataset.bookId) {
-      setSelectedIds((prev) => {
-        if (prev.has(card.dataset.bookId)) return prev;
-        return new Set([...prev, card.dataset.bookId]);
-      });
+      setSelectedIds((prev) => prev.has(card.dataset.bookId) ? prev : new Set([...prev, card.dataset.bookId]));
     }
   }, [selectMode]);
 
-  // Batch operations
   const handleBatchDelete = useCallback(() => {
     onBatchDelete?.([...selectedIds]);
     exitSelectMode();
@@ -154,15 +207,14 @@ export function BookGrid({ books, shelves = [], onSelect, viewMode = 'grid', onB
 
   if (books.length === 0) return <EmptyState />;
 
+  // ── List view ──────────────────────────────────────────────────────────────
   if (viewMode === 'list') {
     return (
       <div className="relative">
         <div className="mx-4 mt-4 theme-surface rounded-xl shadow-sm dark:shadow-stone-950/50 overflow-hidden border border-stone-100 dark:border-stone-800">
           {books.map((book) => (
             <BookListRow
-              key={book.id}
-              book={book}
-              shelves={shelves}
+              key={book.id} book={book} shelves={shelves}
               onClick={selectMode ? () => toggleBook(book.id) : onSelect}
               selected={selectedIds.has(book.id)}
               selectMode={selectMode}
@@ -172,77 +224,72 @@ export function BookGrid({ books, shelves = [], onSelect, viewMode = 'grid', onB
         </div>
         {selectMode && (
           <SelectionToolbar
-            count={selectedIds.size}
-            total={books.length}
-            shelves={shelves}
+            count={selectedIds.size} total={books.length} shelves={shelves}
             onSelectAll={() => setSelectedIds(new Set(books.map((b) => b.id)))}
             onDeselectAll={() => setSelectedIds(new Set())}
-            onDelete={handleBatchDelete}
-            onAddToShelf={handleBatchShelf}
-            onExit={exitSelectMode}
+            onDelete={handleBatchDelete} onAddToShelf={handleBatchShelf} onExit={exitSelectMode}
           />
         )}
       </div>
     );
   }
 
+  // ── Spine / bookshelf view ─────────────────────────────────────────────────
+  if (viewMode === 'spine') {
+    return (
+      <div className="relative pt-4" ref={gridRef}>
+        <SpineView books={books} onSelect={onSelect} />
+      </div>
+    );
+  }
+
+  // ── Grid / Compact view with real shelves ──────────────────────────────────
+  const sharedCardProps = {
+    shelves,
+    onClick: onSelect,
+    selectMode,
+    onSelect: toggleBook,
+    onLongPress: enterSelectMode,
+    onToggleFavorite,
+  };
+
   return (
     <div className="relative">
       <div
         ref={gridRef}
-        className="p-4 theme-bg min-h-full relative"
+        className="theme-bg min-h-full relative pb-4"
         onMouseDown={handleMouseDown}
         onTouchMove={handleTouchMove}
         style={{ userSelect: selectMode ? 'none' : 'auto' }}
       >
         <SortableContext items={books.map((b) => b.id)} strategy={rectSortingStrategy}>
-          <div className={`grid ${GRID_COLS[viewMode] ?? GRID_COLS.grid} gap-3`}>
-            {books.map((book) => (
-              <SortableBookCard
-                key={book.id}
-                book={book}
-                shelves={shelves}
-                onClick={onSelect}
-                compact={viewMode === 'compact'}
-                selectMode={selectMode}
-                selected={selectedIds.has(book.id)}
-                onSelect={toggleBook}
-                onLongPress={enterSelectMode}
-                onToggleFavorite={onToggleFavorite}
-              />
-            ))}
-          </div>
+          <ShelfGrid
+            books={books}
+            cols={cols}
+            viewMode={viewMode}
+            {...sharedCardProps}
+          />
         </SortableContext>
 
         {/* Rubber-band selection rectangle */}
         {band && (
           <div
             style={{
-              position: 'absolute',
-              left: band.x,
-              top: band.y,
-              width: band.w,
-              height: band.h,
+              position: 'absolute', left: band.x, top: band.y, width: band.w, height: band.h,
               border: '2px solid var(--accent)',
               backgroundColor: 'color-mix(in srgb, var(--accent) 12%, transparent)',
-              pointerEvents: 'none',
-              borderRadius: 4,
+              pointerEvents: 'none', borderRadius: 4,
             }}
           />
         )}
       </div>
 
-      {/* Selection toolbar */}
       {selectMode && (
         <SelectionToolbar
-          count={selectedIds.size}
-          total={books.length}
-          shelves={shelves}
+          count={selectedIds.size} total={books.length} shelves={shelves}
           onSelectAll={() => setSelectedIds(new Set(books.map((b) => b.id)))}
           onDeselectAll={() => setSelectedIds(new Set())}
-          onDelete={handleBatchDelete}
-          onAddToShelf={handleBatchShelf}
-          onExit={exitSelectMode}
+          onDelete={handleBatchDelete} onAddToShelf={handleBatchShelf} onExit={exitSelectMode}
         />
       )}
     </div>
@@ -257,7 +304,7 @@ function EmptyState() {
       </svg>
       <h2 className="text-xl font-semibold text-stone-400 dark:text-stone-500 mb-2">Noch keine Bücher</h2>
       <p className="text-stone-400 dark:text-stone-500 text-sm max-w-xs">
-        Scanne den Barcode eines Buches oder gib die ISBN manuell ein, um deine Mediathek zu starten.
+        Scanne den Barcode eines Buches oder gib die ISBN manuell ein, um deine Schmökerstube zu starten.
       </p>
     </div>
   );

@@ -82,6 +82,7 @@ export function FilterBar({ shelves, books, activeShelfId, onShelfChange, viewMo
               { mode: 'grid',    icon: <GridIcon /> },
               { mode: 'compact', icon: <CompactIcon /> },
               { mode: 'list',    icon: <ListIcon /> },
+              { mode: 'spine',   icon: <SpineIcon /> },
             ].map(({ mode, icon }) => (
               <button
                 key={mode}
@@ -196,6 +197,17 @@ function ListIcon() {
   return (
     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  );
+}
+
+function SpineIcon() {
+  return (
+    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+      <rect x="2"  y="3" width="3.5" height="18" rx="1"/>
+      <rect x="7"  y="3" width="5"   height="18" rx="1"/>
+      <rect x="14" y="3" width="3.5" height="18" rx="1"/>
+      <rect x="19" y="3" width="3"   height="18" rx="1"/>
     </svg>
   );
 }

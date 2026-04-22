@@ -155,25 +155,33 @@ export function BookCard({ book, shelves = [], onClick, compact = false, selectM
           : { background: 'linear-gradient(to bottom, rgb(231 229 228), rgb(214 211 208))' }}
       />
 
-      {/* Metadata */}
-      <div className={`${compact ? 'p-2' : 'p-3'} flex flex-col gap-0.5 flex-1`}>
+      {/* Metadata — fixed height for uniform card sizes */}
+      <div
+        className={`${compact ? 'p-2' : 'p-3'} flex flex-col overflow-hidden`}
+        style={{ height: compact ? '3rem' : '5.5rem' }}
+      >
         <p className={`${compact ? 'text-xs' : 'text-sm'} font-semibold text-stone-900 dark:text-stone-100 line-clamp-2 leading-tight`}>
           {book.title}
         </p>
         {!compact && (
-          <p className="text-xs text-stone-500 dark:text-stone-400 truncate">{book.authors?.join(', ')}</p>
+          <p className="text-xs text-stone-500 dark:text-stone-400 truncate mt-0.5">
+            {book.authors?.join(', ')}
+          </p>
         )}
-        {!compact && book.rating > 0 && (
-          <div className="flex gap-0.5 mt-auto pt-1">
-            {[1,2,3,4,5].map((s) => (
-              <svg key={s} className={`w-3 h-3 ${s <= book.rating ? 'text-amber-400' : 'text-stone-200 dark:text-stone-600'}`} fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-              </svg>
-            ))}
+        {!compact && (
+          <div className="mt-auto">
+            {book.rating > 0 ? (
+              <div className="flex gap-0.5">
+                {[1,2,3,4,5].map((s) => (
+                  <svg key={s} className={`w-3 h-3 ${s <= book.rating ? 'text-amber-400' : 'text-stone-200 dark:text-stone-600'}`} fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                  </svg>
+                ))}
+              </div>
+            ) : book.year ? (
+              <p className="text-xs text-stone-400 dark:text-stone-500">{book.year}</p>
+            ) : null}
           </div>
-        )}
-        {!compact && !book.rating && book.year && (
-          <p className="text-xs text-stone-400 dark:text-stone-500 mt-auto pt-1">{book.year}</p>
         )}
       </div>
     </button>

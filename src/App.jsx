@@ -40,7 +40,7 @@ export default function App() {
   const [toasts, setToasts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeShelfId, setActiveShelfId] = useState(null);
-  const [viewMode, setViewMode] = useState('grid');
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'compact' | 'list' | 'spine'
   const [search, setSearch] = useState('');
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [showProfileSetup, setShowProfileSetup] = useState(!hasProfile);
@@ -203,7 +203,7 @@ export default function App() {
 
   const greeting = profile?.name
     ? `${getTimeGreeting()}, ${profile.name}`
-    : 'Mediathek';
+    : 'Schmökerstube';
 
   return (
     <DndContext
@@ -264,7 +264,7 @@ export default function App() {
               <div>
                 <h1 className="text-base font-bold text-stone-900 dark:text-stone-100 leading-none">{greeting}</h1>
                 <p className="text-xs text-stone-400 dark:text-stone-500 leading-none mt-0.5">
-                  {books.length} {books.length === 1 ? 'Buch' : 'Bücher'}
+                  {books.length} {books.length === 1 ? 'Buch' : 'Bücher'} in der Schmökerstube
                 </p>
               </div>
             </div>
