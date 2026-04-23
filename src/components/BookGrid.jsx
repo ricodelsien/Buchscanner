@@ -4,41 +4,11 @@ import { CSS } from '@dnd-kit/utilities';
 import { BookCard } from './BookCard';
 import { BookListRow } from './BookListRow';
 import { SelectionToolbar } from './SelectionToolbar';
-import { SpineView } from './SpineView';
 
-/* ── Responsive column count ──────────────────────────────────────────────── */
-function calcCols(width, mode) {
-  if (mode === 'compact') {
-    if (width < 360) return 4;
-    if (width < 520) return 5;
-    if (width < 720) return 6;
-    if (width < 960) return 7;
-    return 8;
-  }
-  // grid
-  if (width < 490) return 3;
-  if (width < 680) return 4;
-  if (width < 920) return 5;
-  return 6;
-}
-
-function useContainerCols(ref, viewMode) {
-  const [cols, setCols] = useState(viewMode === 'compact' ? 5 : 3);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new ResizeObserver(([e]) => setCols(calcCols(e.contentRect.width, viewMode)));
-    obs.observe(el);
-    setCols(calcCols(el.offsetWidth, viewMode));
-    return () => obs.disconnect();
-  }, [ref, viewMode]);
-  return cols;
-}
-
-const COL_CLASS = {
-  2: 'grid-cols-2', 3: 'grid-cols-3', 4: 'grid-cols-4',
-  5: 'grid-cols-5', 6: 'grid-cols-6', 7: 'grid-cols-7', 8: 'grid-cols-8',
-};
+// ── CSS auto-fill grid — cards always have a consistent, bounded size ──────────
+// With 2 books the remaining columns stay empty (no stretching to fill width)
+const GRID_COLS    = 'repeat(auto-fill, minmax(105px, 155px))';
+const COMPACT_COLS = 'repeat(auto-fill, minmax(76px, 110px))';
 
 /* ── Sortable card wrapper ────────────────────────────────────────────────── */
 function SortableBookCard({ book, selectMode, ...props }) {
@@ -70,11 +40,9 @@ export function BookGrid({
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [band, setBand] = useState(null);
 
-  const gridRef      = useRef(null);
-  const dragRef      = useRef(null);
+  const gridRef       = useRef(null);
+  const dragRef       = useRef(null);
   const initialSelRef = useRef(new Set());
-
-  const cols = useContainerCols(gridRef, viewMode);
 
   const enterSelectMode = useCallback((bookId) => {
     setSelectMode(true);
@@ -199,17 +167,8 @@ export function BookGrid({
     );
   }
 
-  // ── Buchrückenansicht ──────────────────────────────────────────────────────
-  if (viewMode === 'spine') {
-    return (
-      <div className="relative pt-4" ref={gridRef}>
-        <SpineView books={books} onSelect={onSelect} />
-      </div>
-    );
-  }
-
   // ── Raster- / Kompaktansicht ───────────────────────────────────────────────
-  const colClass = COL_CLASS[cols] ?? 'grid-cols-3';
+  const gridTemplate = viewMode === 'compact' ? COMPACT_COLS : GRID_COLS;
 
   const sharedCardProps = {
     onClick: onSelect,
@@ -230,7 +189,10 @@ export function BookGrid({
         style={{ userSelect: selectMode ? 'none' : 'auto' }}
       >
         <SortableContext items={books.map((b) => b.id)} strategy={rectSortingStrategy}>
-          <div className={`grid ${colClass} gap-2.5 px-3 py-3`}>
+          <div
+            className="grid gap-2.5 px-3 py-3"
+            style={{ gridTemplateColumns: gridTemplate }}
+          >
             {books.map((book) => (
               <SortableBookCard
                 key={book.id}
@@ -267,7 +229,6 @@ export function BookGrid({
   );
 }
 
-/** Gibt zurück ob eine Drag-Operation alle ausgewählten Bücher bewegt (für DragOverlay in App) */
 export function isDragWithSelection(dragId, selectedIds) {
   return selectedIds && selectedIds.has(dragId) && selectedIds.size > 1;
 }

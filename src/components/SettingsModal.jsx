@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { THEMES, ACCENT_PRESETS } from '../hooks/useTheme';
 
 export function SettingsModal({
@@ -6,6 +7,9 @@ export function SettingsModal({
   theme, onSetTheme,
   accent, onSetAccent,
 }) {
+  // Live-Vorschau: beim Hovern über einen Akzent wird er in den Theme-Kacheln sofort angezeigt
+  const [hoverAccentId, setHoverAccentId] = useState(null);
+
   const handleExport = () => {
     const json = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), books }, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
@@ -30,6 +34,10 @@ export function SettingsModal({
     reader.readAsText(file);
   };
 
+  // Der Akzent der gerade vorgeschaut wird (hover > aktiv > null)
+  const previewAccentId     = hoverAccentId ?? accent;
+  const previewAccentPreset = ACCENT_PRESETS.find((a) => a.id === previewAccentId && a.hex) ?? null;
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
@@ -43,7 +51,7 @@ export function SettingsModal({
           <div className="w-10 h-1 rounded-full bg-stone-300 dark:bg-stone-600" />
         </div>
 
-        <div className="px-5 pt-4 pb-6 space-y-5 max-h-[85vh] overflow-y-auto">
+        <div className="px-5 pt-4 pb-6 space-y-5 max-h-[88vh] overflow-y-auto">
 
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -65,8 +73,12 @@ export function SettingsModal({
             {/* Theme tiles — 2 columns */}
             <div className="grid grid-cols-2 gap-2.5">
               {THEMES.map((t) => {
-                const active = theme === t.id;
-                const preview = dark ? t.dark : t.light;
+                const active  = theme === t.id;
+                const colors  = dark ? t.dark : t.light;
+
+                // Akzentfarbe für die Vorschau: Override > Theme-eigene
+                const accentHex = previewAccentPreset?.hex ?? colors.accent;
+                const accentFg  = previewAccentPreset?.fg  ?? colors.accentFg;
 
                 return (
                   <button
@@ -76,27 +88,27 @@ export function SettingsModal({
                     className="relative rounded-2xl overflow-hidden transition-all duration-200 text-left"
                     style={{
                       boxShadow: active
-                        ? `0 0 0 2.5px ${preview.accent}, 0 4px 16px rgba(0,0,0,0.15)`
-                        : '0 0 0 1.5px rgba(0,0,0,0.08)',
+                        ? `0 0 0 2.5px ${accentHex}, 0 4px 16px rgba(0,0,0,0.15)`
+                        : '0 0 0 1.5px rgba(0,0,0,0.09)',
                       transform: active ? 'scale(1.025)' : 'scale(1)',
                     }}
                   >
                     {/* Preview area */}
-                    <div className="h-24 flex flex-col" style={{ backgroundColor: preview.bg }}>
-                      {/* Mini filter bar */}
+                    <div className="h-24 flex flex-col" style={{ backgroundColor: colors.bg }}>
+                      {/* Mini filter-bar mit Akzentpillen */}
                       <div className="flex items-center gap-1 px-2 pt-2 pb-1">
-                        <div className="h-2 w-10 rounded-full" style={{ backgroundColor: preview.accent, opacity: 0.9 }} />
-                        <div className="h-2 w-6 rounded-full" style={{ backgroundColor: preview.surface2 }} />
-                        <div className="h-2 w-6 rounded-full" style={{ backgroundColor: preview.surface2 }} />
+                        <div className="h-2 w-10 rounded-full" style={{ backgroundColor: accentHex }} />
+                        <div className="h-2 w-5 rounded-full opacity-30" style={{ backgroundColor: accentHex }} />
+                        <div className="h-2 w-5 rounded-full opacity-30" style={{ backgroundColor: accentHex }} />
                       </div>
-                      {/* Mini book grid */}
+                      {/* Mini Buchgrid */}
                       <div className="flex-1 px-2 pb-1 grid grid-cols-4 gap-1">
                         {[0, 1, 2, 3].map((i) => (
                           <div
                             key={i}
                             className="rounded"
                             style={{
-                              backgroundColor: preview.surface,
+                              backgroundColor: colors.surface,
                               boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
                               paddingTop: '130%',
                             }}
@@ -105,22 +117,20 @@ export function SettingsModal({
                       </div>
                     </div>
 
-                    {/* Name row */}
+                    {/* Name-Leiste */}
                     <div
                       className="px-3 py-2 flex items-center justify-between"
-                      style={{ backgroundColor: preview.surface2 }}
+                      style={{ backgroundColor: colors.surface2 }}
                     >
-                      <div className="min-w-0">
-                        <p className="text-[11px] font-bold leading-none truncate" style={{ color: preview.accent }}>
-                          {t.name}
-                        </p>
-                      </div>
+                      <p className="text-[11px] font-bold leading-none truncate" style={{ color: accentHex }}>
+                        {t.name}
+                      </p>
                       {active && (
                         <div
                           className="w-4 h-4 rounded-full flex items-center justify-center shrink-0 ml-1"
-                          style={{ backgroundColor: preview.accent }}
+                          style={{ backgroundColor: accentHex }}
                         >
-                          <svg className="w-2.5 h-2.5" fill="none" stroke={preview.accentFg} strokeWidth={3} viewBox="0 0 24 24">
+                          <svg className="w-2.5 h-2.5" fill="none" stroke={accentFg} strokeWidth={3} viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                           </svg>
                         </div>
@@ -131,29 +141,44 @@ export function SettingsModal({
               })}
             </div>
 
-            {/* Accent colour overrides */}
+            {/* Akzentfarben — Hover zeigt Live-Vorschau in den Kacheln oben */}
             <div className="mt-4">
-              <p className="text-[11px] font-semibold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-2.5">Akzentfarbe</p>
-              <div className="flex flex-wrap gap-2">
+              <p className="text-[11px] font-semibold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-2.5">
+                Akzentfarbe
+                {hoverAccentId && hoverAccentId !== 'default' && (
+                  <span className="ml-2 normal-case font-normal text-[10px] opacity-60">
+                    — {ACCENT_PRESETS.find(a => a.id === hoverAccentId)?.label}
+                  </span>
+                )}
+              </p>
+              <div
+                className="flex flex-wrap gap-2.5"
+                onMouseLeave={() => setHoverAccentId(null)}
+              >
                 {ACCENT_PRESETS.map((a) => {
-                  const isActive = accent === a.id;
-                  const color    = a.hex ?? 'var(--accent)';
+                  const isActive  = accent === a.id;
+                  const isHovered = hoverAccentId === a.id;
+                  const color     = a.hex ?? 'var(--accent)';
+
                   return (
                     <button
                       key={a.id}
+                      onMouseEnter={() => setHoverAccentId(a.id)}
                       onClick={() => onSetAccent(a.id)}
                       title={a.label}
-                      className="relative flex items-center justify-center transition-transform"
-                      style={{ transform: isActive ? 'scale(1.18)' : 'scale(1)' }}
+                      className="relative transition-transform duration-100"
+                      style={{ transform: (isActive || isHovered) ? 'scale(1.2)' : 'scale(1)' }}
                     >
                       <div
-                        className="w-7 h-7 rounded-full"
+                        className="w-7 h-7 rounded-full transition-shadow duration-150"
                         style={{
                           backgroundColor: color,
                           boxShadow: isActive
                             ? `0 0 0 2px var(--theme-surface), 0 0 0 4px ${color}`
-                            : '0 1px 3px rgba(0,0,0,0.2)',
-                          border: a.hex ? 'none' : '2px dashed rgba(0,0,0,0.25)',
+                            : isHovered
+                              ? `0 0 0 2px var(--theme-surface), 0 0 0 3.5px ${color}`
+                              : '0 1px 3px rgba(0,0,0,0.2)',
+                          border: a.hex ? 'none' : '2px dashed rgba(128,128,128,0.4)',
                         }}
                       />
                     </button>
@@ -165,7 +190,7 @@ export function SettingsModal({
 
           <div className="border-t border-stone-100 dark:border-stone-800" />
 
-          {/* ── Dark Mode ──────────────────────────────────────────────────────── */}
+          {/* ── Darstellung ────────────────────────────────────────────────────── */}
           <section className="space-y-2">
             <p className="text-[11px] font-semibold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-3">Darstellung</p>
 

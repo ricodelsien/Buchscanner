@@ -395,6 +395,22 @@ export default function App() {
           />
         )}
 
+        {/* ── Desktop Scan-FAB (unten rechts) ────────────────────────────── */}
+        <button
+          onClick={() => scanInputRef.current?.openCamera?.()}
+          className="hidden md:flex fixed bottom-7 right-7 z-30 w-14 h-14 btn-accent rounded-full shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 items-center justify-center border-4 border-[var(--theme-bg)] transition-all duration-150"
+          title="Barcode scannen"
+        >
+          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="2"  y="4" width="2"   height="16" rx="0.5"/>
+            <rect x="6"  y="4" width="1"   height="16" rx="0.5"/>
+            <rect x="9"  y="4" width="2.5" height="16" rx="0.5"/>
+            <rect x="13" y="4" width="1"   height="16" rx="0.5"/>
+            <rect x="16" y="4" width="2"   height="16" rx="0.5"/>
+            <rect x="20" y="4" width="1.5" height="16" rx="0.5"/>
+          </svg>
+        </button>
+
         {/* ── Mobile Bottom Navigation ────────────────────────────────────── */}
         <BottomNav
           onScanClick={handleMobileScan}
